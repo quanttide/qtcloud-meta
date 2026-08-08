@@ -1,0 +1,44 @@
+[
+  {
+    "id": "wf_001",
+    "name": "成交转化",
+    "type": "preset",
+    "status": "enabled",
+    "steps": [
+      {
+        "source_event": "com.qtcloud.sales.deal.closed",
+        "source_domain": "qtcloud.sales",
+        "target_domain": "qtcloud.biz",
+        "target_action": "创建合同"
+      }
+    ]
+  },
+  {
+    "id": "wf_002",
+    "name": "订单交付",
+    "type": "preset",
+    "status": "enabled",
+    "steps": [
+      {
+        "source_event": "com.qtcloud.biz.contract.signed",
+        "source_domain": "qtcloud.biz",
+        "target_domain": "qtcloud.asset",
+        "target_action": "准备交付"
+      }
+    ]
+  },
+  {
+    "id": "wf_003",
+    "name": "开票收款",
+    "type": "preset",
+    "status": "disabled",
+    "steps": [
+      {
+        "source_event": "com.qtcloud.biz.contract.invoiced",
+        "source_domain": "qtcloud.biz",
+        "target_domain": "qtcloud.finance",
+        "target_action": "创建应收"
+      }
+    ]
+  }
+]

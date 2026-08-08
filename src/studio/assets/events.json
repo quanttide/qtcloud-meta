@@ -1,0 +1,87 @@
+[
+  {
+    "id": "evt_001",
+    "type": "com.qtcloud.sales.deal.closed",
+    "source": "qtcloud.sales",
+    "description": "商机成交时触发，包含金额、客户信息",
+    "direction": "publish",
+    "status": "active",
+    "version": "v2.1",
+    "subscriber_count": 3,
+    "schema": {
+      "fields": [
+        {"name": "deal_id", "type": "string", "required": true},
+        {"name": "amount", "type": "number", "required": true},
+        {"name": "customer_id", "type": "string", "required": true},
+        {"name": "products", "type": "array", "required": false}
+      ]
+    }
+  },
+  {
+    "id": "evt_002",
+    "type": "com.qtcloud.sales.deal.created",
+    "source": "qtcloud.sales",
+    "description": "新商机产生时触发",
+    "direction": "publish",
+    "status": "active",
+    "version": "v1.0",
+    "subscriber_count": 1,
+    "schema": {
+      "fields": [
+        {"name": "deal_id", "type": "string", "required": true},
+        {"name": "title", "type": "string", "required": true},
+        {"name": "customer_id", "type": "string", "required": true}
+      ]
+    }
+  },
+  {
+    "id": "evt_003",
+    "type": "com.qtcloud.biz.contract.signed",
+    "source": "qtcloud.biz",
+    "description": "合同已签署时触发",
+    "direction": "publish",
+    "status": "active",
+    "version": "v1.2",
+    "subscriber_count": 2,
+    "schema": {
+      "fields": [
+        {"name": "contract_id", "type": "string", "required": true},
+        {"name": "deal_id", "type": "string", "required": true},
+        {"name": "amount", "type": "number", "required": true}
+      ]
+    }
+  },
+  {
+    "id": "evt_004",
+    "type": "com.qtcloud.biz.contract.invoiced",
+    "source": "qtcloud.biz",
+    "description": "合同已开票时触发",
+    "direction": "publish",
+    "status": "active",
+    "version": "v1.0",
+    "subscriber_count": 1,
+    "schema": {
+      "fields": [
+        {"name": "contract_id", "type": "string", "required": true},
+        {"name": "invoice_id", "type": "string", "required": true},
+        {"name": "amount", "type": "number", "required": true}
+      ]
+    }
+  },
+  {
+    "id": "evt_005",
+    "type": "com.qtcloud.customer.verified",
+    "source": "qtcloud.customer",
+    "description": "客户资质通过审核时触发",
+    "direction": "publish",
+    "status": "active",
+    "version": "v1.0",
+    "subscriber_count": 2,
+    "schema": {
+      "fields": [
+        {"name": "customer_id", "type": "string", "required": true},
+        {"name": "verified_at", "type": "string", "required": true}
+      ]
+    }
+  }
+]

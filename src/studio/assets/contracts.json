@@ -1,0 +1,44 @@
+[
+  {
+    "id": "ctr_001",
+    "event_id": "evt_001",
+    "subscriber_domain": "qtcloud.biz",
+    "mapping": {},
+    "status": "active",
+    "versions": [
+      {
+        "id": "ver_001",
+        "contract_id": "ctr_001",
+        "schema_json": "{\"fields\":[{\"name\":\"deal_id\",\"type\":\"string\",\"required\":true},{\"name\":\"amount\",\"type\":\"number\",\"required\":true},{\"name\":\"customer_id\",\"type\":\"string\",\"required\":true}]}",
+        "change_log": "初始版本",
+        "status": "active",
+        "confirmed_by": ["qtcloud.biz"]
+      }
+    ]
+  },
+  {
+    "id": "ctr_002",
+    "event_id": "evt_001",
+    "subscriber_domain": "qtcloud.asset",
+    "mapping": {},
+    "status": "change_pending",
+    "versions": [
+      {
+        "id": "ver_002",
+        "contract_id": "ctr_002",
+        "schema_json": "{\"fields\":[{\"name\":\"deal_id\",\"type\":\"string\",\"required\":true},{\"name\":\"amount\",\"type\":\"number\",\"required\":true},{\"name\":\"customer_id\",\"type\":\"string\",\"required\":true}]}",
+        "change_log": "初始版本",
+        "status": "superseded",
+        "confirmed_by": ["qtcloud.asset"]
+      },
+      {
+        "id": "ver_003",
+        "contract_id": "ctr_002",
+        "schema_json": "{\"fields\":[{\"name\":\"deal_id\",\"type\":\"string\",\"required\":true},{\"name\":\"amount\",\"type\":\"number\",\"required\":true},{\"name\":\"customer_id\",\"type\":\"string\",\"required\":true},{\"name\":\"discount\",\"type\":\"number\",\"required\":false}]}",
+        "change_log": "新增折扣字段",
+        "status": "pending",
+        "confirmed_by": []
+      }
+    ]
+  }
+]
