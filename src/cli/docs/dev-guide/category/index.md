@@ -142,4 +142,3 @@ pending 挂起的 change_request，没有则为 None
 
 between 的 assertions 输入没有自然来源。within 的输入是自足的——范畴里有本体，本体里就有断言。between 是「把 A 的断言翻到 B」，那 A 的断言应该从 A 读出来，但代码里是外部硬传的。理想 CLI 要么从源范畴自动导出断言，要么加一个 —assertions 参数。这是接真实 CLI 前必须先定的一项输入契约。
 
-本工具自身的建模见[元本体](meta-ontology.md)——一次自食其力：工具用自己的方法描述自己所在的范畴，产出是一份活文档加一个回归测试。
