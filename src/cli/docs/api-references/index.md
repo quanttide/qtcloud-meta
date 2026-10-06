@@ -1,15 +1,117 @@
 # API 参考
 
-qtcloud-meta CLI 处于骨架阶段，本页只登记已存在的接口；新增命令时在此补全，并同步[用户指南](../user-guide/index.md)的用法。
+本页给两样东西：已实现的接口，以及按主文档[用户指南](../../../../docs/user-guide/index.md)的两条流程初步设计的命令集。怎么用看[用户指南](../user-guide/index.md)，工程结构看[开发指南](../dev-guide/index.md)。
 
-## 包
+> 自「命令总览」以下的命令、全局选项与设计取向均为设计稿，尚未实现。骨架阶段唯一落地的是「已实现的接口」一节，命令的名字、参数与输出都可能随实现调整。
 
-包名 `qtcloud-meta-cli`，版本 0.1.0，edition 2021，当前无第三方依赖。
+## 已实现的接口
 
-## 二进制
+包名 `qtcloud-meta-cli`，版本 0.1.0，edition 2024，当前无第三方依赖。命令名 `qtcloud-meta`，入口 `src/main.rs`，运行向标准输出打印一行 `qtcloud-meta` 后正常退出，无子命令。
 
-命令名 `qtcloud-meta`，入口 `src/main.rs`。当前唯一行为是向标准输出打印一行 `qtcloud-meta` 后正常退出。
+## 命令总览
 
-## 命令
+| 命令 | 做什么 |
+| :-- | :-- |
+| `ingest` | 走完抽取、对齐、校验，产出一条待审批的本体变更 |
+| `change list` / `change show` | 只读查看待审批队列与单条变更的详情 |
+| `change apply` | 把已批准的变更写入本体文件，本体版本加一 |
+| `category list` / `category show` | 列出范畴注册信息与本体承诺 |
+| `mapping list` | 列出范畴之间的函子映射规则 |
+| `conflict list` | 列出已记录的冲突与人类裁决 |
+| `analyze` | 按映射把断言翻译到目标范畴并输出结论 |
 
-尚无子命令。命令集随两条流程（本体写入、范畴分析）的实现落地，届时逐条登记命令名、参数与输出。
+## 全局选项
+
+装载顺序写死：命令行 > 环境变量 > 缺省规矩。
+
+- `--db <路径>`：SQLite 单文件的位置，缺省 `meta.db`，环境变量 `QTCLOUD_META_DB`；
+- `--ontology <路径>`：Turtle/OWL 本体文件的位置，环境变量 `QTCLOUD_META_ONTOLOGY`；
+- `--category <范畴>`：当前范畴，决定按哪份本体承诺对齐与翻译，环境变量 `QTCLOUD_META_CATEGORY`；
+- `--json`：把结果以 JSON 写到标准输出，提示与进度仍走标准错误；
+- `--dry-run`：写入型命令只打印要写什么、写去哪，不落盘；
+- `--version`：打印版本号，与 `Cargo.toml` 一致。
+
+LLM 端点沿用 Ollama 自己的 `OLLAMA_HOST`，不另设变量；本地没起 Ollama 时 `ingest` 直接失败退出。
+
+## 本体写入的命令
+
+这条流程的分界在变更落库：CLI 把链路执行到 `change_request` 为止，人类确认在审批页面完成，生效另走 `change apply`。
+
+### ingest
+
+```bash
+qtcloud-meta ingest <输入路径> [--category <范畴>] [--dry-run]
+```
+
+读一篇非结构化文本（`-` 表示标准输入），依次做 LLM 抽取、与现有本体对齐、SHACL 校验，最后写一条 `decision=pending` 的 `change_request`。输出变更 id、候选概念清单、对齐结论（复用、新增或冲突）、校验结果与风险等级，字段与主文档用户指南的抽取示例一致。本命令不改本体文件。
+
+### change
+
+```bash
+qtcloud-meta change list [--status pending]
+qtcloud-meta change show <变更 id>
+qtcloud-meta change apply <变更 id> [--dry-run]
+```
+
+`list` 与 `show` 只读 `change_request` 表，审批页面读的是同一张表，两边不各存一份队列。`apply` 只接受 `decision=approved` 的请求，把候选定义写进 Turtle/OWL 文件、本体版本加一，并把请求标为已生效；`rejected` 的请求原样留库，不写文件。
+
+## 范畴分析的命令
+
+这条流程以读为主：翻译、查裁决、出结论都在内存里完成，只有映射规则缺失时才落一条变更等人类补规则。
+
+### category
+
+```bash
+qtcloud-meta category list
+qtcloud-meta category show <范畴>
+```
+
+读 `category` 表，输出注册名、方法论、对应的本体文件路径、本体承诺与状态。`show` 多打印该范畴承诺的实体、属性与关系清单，供分析前确认翻译的落脚点。
+
+### mapping
+
+```bash
+qtcloud-meta mapping list [--from <范畴>] [--to <范畴>]
+```
+
+读 `category_mapping` 表，按来源与目标范畴过滤，输出函子规则、映射类型与置信度。
+
+### conflict
+
+```bash
+qtcloud-meta conflict list
+```
+
+读 `conflict` 表，输出已记录的冲突断言、冲突类型与人类裁决结果。
+
+### analyze
+
+```bash
+qtcloud-meta analyze --from <范畴> --to <范畴> [--input <文件>]
+```
+
+输入是元智能体给的断言，JSON 从标准输入或 `--input` 读入。执行顺序与主文档用户指南一致：查 `mapping` 取规则并翻译，查 `conflict` 比对既往裁决，命中 `true_conflict` 按既往裁决处理，规则缺失则写一条待人类定义映射的 `change_request` 并停下。规则齐时输出目标范畴下的整合结论，全程只读。
+
+## 读写落点
+
+| 命令 | 读 | 写 |
+| :-- | :-- | :-- |
+| `ingest` | 本体文件、`category` | `change_request` |
+| `change list` / `change show` | `change_request` | 无 |
+| `change apply` | `change_request` | 本体文件 |
+| `category` / `mapping` / `conflict` | 对应的一张表 | 无 |
+| `analyze` | `category_mapping`、`conflict` | 规则缺失时写 `change_request` |
+
+## 输出与退出码
+
+标准输出只放结果与 `--json` 的 JSON，提示、进度与错误一律走标准错误，管道里不会混进别的东西。
+
+退出码 0 表示成功，1 表示失败（输入读不到、校验不通过、LLM 不可达、范畴或映射不存在）。「等待人类确认」是正常结果而非失败：`ingest` 与 `analyze` 产出待审批变更时仍退出 0，靠输出里的变更 id 与状态表达下一步。
+
+## 设计取向
+
+1. CLI 执行链路但不做裁决：链路止于 `change_request` 落库，人类确认留在审批页面，两边共享同一张队列表。
+2. 生效独立成一步：只有 `change apply` 改本体文件，页面不碰文件，本体变更可重放、可回滚、有版本号。
+3. 分析默认只读：`analyze` 只在规则缺失时登记一条变更，翻译出的结论是输出，不是新状态。
+4. 状态只有两处：事实集中在 SQLite 单文件与 Turtle/OWL 文件，CLI 是唯一入口，不引入第三份状态。
+5. 输出面向元智能体：`--json` 的字段是脚本契约，只加不改。

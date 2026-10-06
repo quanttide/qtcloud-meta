@@ -17,4 +17,4 @@ qtcloud-meta CLI 是量潮元云的本地命令行入口，把[《三层极简�
 
 - [用户指南](user-guide/index.md)：安装、运行与两条流程的使用过程；
 - [开发指南](dev-guide/index.md)：工程结构、日常检查与文档同步约定；
-- [API 参考](api-references/index.md)：包、二进制与命令的当前接口。
+- [API 参考](api-references/index.md)：包与二进制的当前接口，以及命令的初步设计。
