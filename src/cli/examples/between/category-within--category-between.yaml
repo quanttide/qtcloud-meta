@@ -1,0 +1,27 @@
+# examples/between/category-within--category-between.yaml
+#
+# 走向：category-within（描述范畴内实现的本体）→ category-between（描述范畴间实现的本体）。
+# 两份本体都是工具在描述自己，所以这张表不是业务规则，是两份自我描述的对应。
+#
+# 口径：只写真心对得上的；对不上的留白，不硬凑（留白项列在文件末）。
+# 字段：mappings[].from = 源范畴的概念，.to = 目标范畴的概念；conflicts 是既往裁决，本走向为空。
+
+mappings:
+  # 输入定义——两边都是从 YAML 读进来的那份定义
+  - { from: OntologyDef, to: BetweenDef }
+  # 输入表里的有向行——边是 from→to，映射也是 from→to
+  - { from: EdgeDef, to: MappingDef }
+  # 报告本体——两边交给下游分析的都是它
+  - { from: Report, to: Report }
+  # 报告里的分段——范畴内分「装载 / 分析」，范畴间分「五步」
+  - { from: LoadedInfo, to: StepInfo }
+  - { from: AnalyzedInfo, to: StepInfo }
+  # 报告末尾的清单行——范畴内是关系行，范畴间是翻译行
+  - { from: RelationInfo, to: TranslationInfo }
+
+conflicts: []
+
+# 留白（这三类在范畴间那侧没有对口的概念，不硬凑）：
+#   ConceptDef —— 范畴间那侧的行都是成对的（from→to），没有单名概念行
+#   AxiomDef   —— 范畴间的输入表里没有公理/约束这一类行
+#   LawGroup   —— 范畴间不做公理校验，没有对应分组
