@@ -1,7 +1,7 @@
-//! 范畴分析的基本演示 —— 对应 `docs/user-guide/category.md` 的「装载与分析」三步。
+//! 范畴内：装载与分析 —— 对应 `docs/user-guide/category/within.md`。
 //!
 //! 1. 装载：本体与关系分别作为对象和态射装进范畴；
-//! 2. 分析：按范畴的标准方法走——恒等、复合、范畴定律校验；
+//! 2. 分析：按范畴的标准方法走——恒等、复合、三组公理校验；
 //! 3. 返回：打印一份关系报告，LLM 拿这份报告做进一步分析。
 //!
 //! 数据源是主文档 `docs/dev-guide/index.md` 的本体示例（Content / Account /
@@ -119,7 +119,7 @@ fn analyze(morphisms: &[MediaRelation]) -> Analyzed {
     }
 }
 
-fn main() {
+pub fn run() {
     let loaded = load();
     let analyzed = analyze(&loaded.morphisms);
 
