@@ -1,106 +1,62 @@
-判断
+---
+stage: clarifying
+---
 
-拆，但 between 保留为父命令：
+# 范畴间：实现与拆分取舍
 
-```
-category within
-category between unify
-category between interface
-```
+对应 `src/category/between/`：`unify.rs` 是融合型的语义，`common.rs` 是步骤框架与报告骨架，`mod.rs` 只做再导出（外部调用路径仍是 `between::run`）。入口 `between::run(源, 目标, &Options)`。
 
-不是 between —mode unify，也不是三个平级子命令。
+## 五步怎么落成代码
 
-为什么
+| 步 | 谁写 | 实现 |
+|:--|:--|:--|
+| 1 选定范畴 | `between/common.rs` 的 `drive` | 装载两端本体，取源端概念名作本体承诺；未注册则报告写「未注册，停」并返回错误 |
+| 2 映射翻译 | `unify.rs` | 读映射表；无表、或某条 `from` 没有目标 → 转第 4 步 |
+| 3 冲突检查 | `unify.rs` | 查 `conflicts`，只认 `true_conflict`，其它类型忽略、继续 |
+| 4 规则缺失 | `between/common.rs` 的 `assemble_report` | 停机位：`pending` 写 change_request，返回成功，不往下走 |
+| 5 输出结论 | `unify.rs` | 翻译清单，逐条 `from → to` |
 
-表面区别很小，深层区别很大
+分工是固定的：`common.rs` 管步骤框架、报告骨架、change_request 编号、三张表的读取；`unify.rs` 管映射怎么读、冲突怎么判、结论是什么。将来加对接型就是照这个分工多一个 `interface.rs`，共享层不再动。
 
-—mode 和子命令，用户看到的是同一个东西的两种写法。但它们声明的概念关系不同：
+## 三张表
 
-写法 声明的是什么
-between —mode unify 这是一件事的两个变体
-between unify 这是一类事下的两个不同操作
+本体表与映射表都只读不写，源文件分别是 `examples/category/<标识>.yaml` 与 `examples/between/<源>--<目标>.yaml`，两者都由 `include_str!` 在编译期编进二进制（理由见 [within.md](within.md) 的装载一节）。映射表的键是 `<源>--<目标>`（`mapping_key`），哪一对范畴由键决定，表里不写；本体那一侧复用 `within::load_ontology`，范畴未注册的判定与读取只有一处实现。
 
-前面已经论证过：融合型结果是一个范畴，对接型结果是一个函子——两种不同的数学对象，校验语义完全不同（查冲突 vs 验函子定律）。它们不是同一件事的两个变体，是一类事下的两个操作。
+表里没有这个键视为「没有规则」不是错误（`load_table` 返回 `None`），解析失败才是错误：
 
-CLI 应该反映这个真相。—mode 把它说小了。
-
-参数集会互相污染
-
-这是最实际的理由。两种模式需要的参数不一样：
-
-模式 可能需要的参数
-unify 映射表、冲突策略、多对一取舍策略
-interface 函子映射、—check-functor-laws、适配器策略
-
-用 —mode，这些参数得挤进同一个签名。要么全塞一起，help 里注明「仅 unify 有效」；要么在代码里按 mode 判断哪些参数有效。两种都脏。
-
-用子命令，各自签名独立，help 自然分层，不用互相解释。
-
-between 应该升格为「一类」
-
-现在 within / between 是「内 / 间」的对称。改成三个平级（within / unify / interface），这个对称就断了——within 还是「内」，但「间」没了总称。
-
-保留 between 作为「范畴间」的父命令，下挂两个操作：
-
-· within —— 范畴内
-· between unify —— 范畴间，融合
-· between interface —— 范畴间，对接
-
-对称保住了，两个不同操作也拆开了。between 从「一个操作」升格为「一类操作」——这才是它本来的身份。
-
-演进更干净
-
-将来如果出现第三种跨范畴操作——比如「合并两个范畴但两边都保留」（既不融合也不对接，是第三种）——加一个 between merge 比加第三个 mode 干净得多。mode 参数会变成 —mode unify|interface|merge，每加一种就多一个分支。子命令是加法，mode 是乘法。
-
-拆开后的代码结构
-
-```
-src/cli/src/category/
-├── within.rs          范畴内，不动
-├── between/
-│   ├── mod.rs         父命令，解析子命令、共享出口
-│   ├── unify.rs       融合型（现 between.rs 的逻辑搬过来）
-│   ├── interface.rs   对接型（新增）
-│   └── common.rs      共享层：流程骨架、报告、变更请求
+```yaml
+mappings:
+  - { from: CodeConfig, to: Criterion }   # from 空 = 断言没有对应规则
+conflicts:
+  - { type: true_conflict, resolution: "…" }   # 只有这一种类型被读取
 ```
 
-共享层 common.rs 放什么：
+现有三张表：`qtcloud-code-cli → qtcloud-work-cli` 6 行、`qtcloud-work-cli → qtcloud-meta-cli-category` 3 行、`qtcloud-meta-cli-category → qtcloud-code-cli` 3 行，`conflicts` 全空；反向三对没有表，走反向会停在第 4 步。
 
-共享 不共享
-步骤框架（选定 → 映射 → 冲突 → 缺失 → 结论） 映射表的语义（重命名 vs 函子映射）
-报告骨架（Report / trace / results） 冲突判定标准
-变更请求机制 结论的性质（合并清单 vs 函子）
-三张表的读取 是否保留两边
+## 报告
 
-关键：共享层要现在抽，不能先复制再抽象。如果先把 between.rs 复制成 unify.rs 和 interface.rs 再改，会留下两份要同步的代码——那正是拆子命令想避免的。
+trace 是固定五步：走到的 Done，没走到的 Skipped，停机位 Pending。结果维度只填 `translation`；收尾是 `conclusion` 与 `pending` 二选一，不同时出现。change_request 的编号是 `cr-map-<源范畴名>-<目标范畴名>`，取本体里的 `name` 字段而不是文件名。md 版式会跳过 Skipped 的步，json 序列化同一份 `Report`。
 
-和 —mode 的实际差异清单
+```bash
+cargo run -- category between qtcloud-code-cli qtcloud-work-cli
+cargo run -- category between qtcloud-work-cli qtcloud-code-cli   # 反向无表，停在第 4 步
+cargo run --example category_between                              # 连走三段协作圈
+```
 
-维度 —mode 子命令
-概念准确性 说成一件事的变体 说成一类事的两个操作
-help 质量 要读 mode 说明 各自独立 help
-参数隔离 互相污染 各自干净
-加第三种 改签名、加分支 加一个子命令
-测试 一个测试文件分 mode 各自测试文件
-代码结构 一个函数两套逻辑 两套逻辑 + 共享层
-迁移成本 低（改名） 中（拆文件）
-长期维护 mode 分支越堆越多 加法，不堆
+## 拆成 `unify` / `interface` 两个子命令
 
-迁移路径
+判断是拆，但 `between` 保留为父命令：`category within` / `category between unify` / `category between interface`。既不是 `between --mode unify`，也不是三个平级子命令。
 
-你现在 between.rs 已经实现了融合型逻辑，迁移是：
+不是同一个东西的两个变体，是一类事下的两个操作：融合型的结果是一个范畴，校验语义是查冲突；对接型的结果是一个函子，校验语义是验函子定律——两种数学对象，两种表。`--mode` 把这层关系说小了。
 
-1. 建 between/ 目录，mod.rs 只做子命令分发
-2. 把现有 between.rs 搬成 between/unify.rs，逻辑不动
-3. 抽出 common.rs——把流程骨架、Report、变更请求抽出来
-4. 新增 between/interface.rs——从函子校验开始设计
-5. CLI 入口改成分发：between unify / between interface
+参数集会互相污染。融合型要映射表与冲突策略，对接型要函子映射与适配策略；塞进同一个签名就得互相注明「仅某某模式有效」，用子命令则各自签名独立，帮助信息自然分层。
 
-第 1–3 步不改变现有行为，只是重组。第 4 步是新功能。第 5 步是接口变更，要改文档和调用方。
+`between` 升格为父命令之后，`within` 是「内」、`between` 是「间」的对称保住了，将来第三种跨范畴操作（比如合并后两边都保留）是加一个子命令，而不是把 `--mode` 改成三选一。
 
-先做 1–3，跑通现有测试，证明重组没破坏行为，再做 4。 不要一步到位。
+## 迁移状态
 
-一句话
+原设计的五步里前 1–3 步（建目录、`between.rs` 搬成 `unify.rs`、抽出 `common.rs`，纯重组不改行为）已完成；第 4 步新增 `interface.rs`、第 5 步 CLI 改成两个子命令都未做——`src/main.rs` 现在仍是一个 `between` 吃两个范畴。
 
-拆成两个子命令，本质是宣布这是两件事——因为它们在数学上是两种对象、校验语义不同、参数集不同。但 between 不该消失，它该从「一个操作」升格为「一类操作」，下挂 unify 和 interface。这比 —mode 更准确地反映概念，也让加第三种操作变成加法而不是乘法。
+## 已知留白
 
+冲突类型只有 `true_conflict` 一种，其它类型怎么办规则未定义，代码是「忽略、继续」。映射表没有校验：`from` 不在源本体、`to` 不在目标本体都能通过。`between` 不跑 `within` 的任何检查，本体结构坏了它照旧走到第 5 步。对接型的函子校验没有实现，翻完之后也没有人验结构有没有保住——这几条都写在[用户指南](../../user-guide/category/between.md)的「现在能做什么、不能做什么」里。

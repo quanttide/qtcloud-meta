@@ -1,361 +1,86 @@
-基于 lau-category-theory 的集成方案，可以按照以下结构来设计。
+---
+stage: clarifying
+---
 
-📦 项目依赖配置 (Cargo.toml)
+# 范畴内：实现
 
-```toml
-[package]
-name = ”qtcloud-meta-category“
-version = ”0.1.0“
-edition = ”2021“
+对应 `src/category/within.rs`，入口 `within::run(范畴, &Options)`。流程是：YAML 本体 → serde 解析 → `lau-category-theory` 构造范畴 → 四组检查 → 装配报告 → md / json 两个出口（共用同一份数据）。
 
-[dependencies]
-lau-category-theory = ”0.1.0“
-serde = { version = ”1“, features = [”derive“] }
-serde_yaml = ”0.9“ # 注意：serde_yaml 已归档，可考虑 yaml_serde 或 serde_yml
-```
+## 本体 schema
 
-依赖说明：lau-category-theory 0.1.0 版本引入了 nalgebra 和 serde 作为依赖，功能覆盖范畴、函子、自然变换、极限/余极限、单子及 Yoneda 引理。YAML 解析方面，serde_yaml 已归档，建议迁移到 yaml_serde 或 serde_yml 等维护中的替代方案。
-
-📝 YAML 本体定义 Schema
-
-本体定义文件（ontology.yaml）的结构如下：
+本体文件在 `examples/category/<范畴>.yaml`，数据与实现分放：`examples/` 只放示例数据，`src/` 只放实现。字段如下：
 
 ```yaml
-# ontology.yaml
-name: Media
-source: ”qtcloud-meta docs/dev-guide/index.md 本体示例“
-version: ”1.0“
+name: QtcloudMetaCliCategory        # 必填，进报告标题
+source: "…的数据来源"               # 可选
+version: "1.0"                      # 可选
 
-concepts:
-  - name: Content
-    label:
-      zh: 内容
-  - name: Account
-    label:
-      zh: 账号
-  - name: Material
-    label:
-      zh: 素材
+concepts:                           # 概念 → 对象
+  - { name: Report, label: { zh: 报告 } }
 
-edges:
-  - from: Content
-    to: Account
-    kind: PublishedOn
-  - from: Content
-    to: Material
-    kind: UsesMaterial
+edges:                              # 边 → 态射
+  - { from: Report, to: Step, kind: HasTrace }
 
-# 可选：领域公理（对应 pr4xis 的 axioms: 子句）
-axioms:
-  - id: ax-content-must-publish
-    description: ”内容必须发布在至少一个账号上“
-    type: cardinality
-    target: Content
-    relation: PublishedOn
-    constraint: ”min: 1“
+axioms:                             # 可选，领域公理
+  - id: ax-report-has-trace
+    description: "报告必须有过程轨迹"
+    type: cardinality               # 目前只支持这一种
+    target: Report
+    relation: HasTrace
+    constraint: "min: 1"            # 只认 min: N
 ```
 
-🦀 Rust 数据结构与解析
+`name` 是唯一必填字段；`source`、`version`、`axioms` 缺省即空。Rust 侧的结构体与之一一对应（`OntologyDef` / `ConceptDef` / `EdgeDef` / `AxiomDef`），字段名与上表一致，`axioms.type` 通过 `serde(rename)` 对上 YAML 里的 `type`。
 
-定义与 YAML 结构对应的 Rust 结构体，用于 serde 反序列化：
+三份现成本体是 `qtcloud-meta-cli-category`（16 概念 / 13 边）、`qtcloud-code-cli`（17 / 13）、`qtcloud-work-cli`（13 / 10）。
 
-```rust
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+## 装载
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OntologyDef {
-    pub name: String,
-    pub source: Option<String>,
-    pub version: Option<String>,
-    pub concepts: Vec<ConceptDef>,
-    pub edges: Vec<EdgeDef>,
-    #[serde(default)]
-    pub axioms: Vec<AxiomDef>,
-}
+三份本体在编译期由 `include_str!` 读进二进制：源文件仍是 `examples/category/<标识>.yaml`，`has_ontology` 判注册、`load_ontology` 取文本解析。范畴不在表里就是错误，范畴内没有停机位。之所以编译期读，是因为 `CARGO_MANIFEST_DIR` 指向构建期的源码目录——从 crates.io 装下来的二进制没有那个目录，也没有那份文件。读进来之后 `validate_ontology` 只查一件事：每条边的两端都必须在 `concepts` 里，缺一端就报错，不代补。
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConceptDef {
-    pub name: String,
-    #[serde(default)]
-    pub label: HashMap<String, String>,
-}
+## 构造范畴
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EdgeDef {
-    pub from: String,
-    pub to: String,
-    pub kind: String,
-}
+概念 → 对象，边 → 态射；态射名字是 `kind#from->to`，把种类和端点一起编进去，避免同一种类的名字互相顶掉（同一个 `kind` 打两条不同端点的边是合法的）。
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AxiomDef {
-    pub id: String,
-    pub description: String,
-    #[serde(rename = ”type“)]
-    pub axiom_type: String,
-    pub target: String,
-    pub relation: String,
-    pub constraint: String,
-}
+然后填复合表，`build_category` 只建到长度 3：
+
+- 长度 2：声明边两两首尾相接，写 `compose(声明, 声明)`；
+- 长度 3：长度 2 的路径再往前、往后各接一条声明边，写 `compose(长度2, 声明)` 与 `compose(声明, 长度2)`。
+
+停在长度 3 的理由是库的 `check_associativity` 遍历的三元组全部取自 `cat.morphisms`（对象恒等 + 声明边），它查表只有这四种形态；长度 3 的合成结果只被拿去比名字，不会再当键查表。原实现建到全闭包（合成再合成），遇到自环与互指时组合数失控，实测 `qtcloud-code-cli` 那份吃到 3GB 才中止。
+
+合成结果的名字由**路径本身**决定、不带括号：库按名字判等，带括号的名字两侧永远不同，结合律就永远过不去。
+
+## 四组检查
+
+| 组 | 查什么 | 数据来源 |
+|:--|:--|:--|
+| 范畴定律 | 恒等律、结合律各一条，共 2 条 | 库的 `check_identity_laws` / `check_associativity` |
+| 结构公理 | 只对 Subsumption、Parthood、Causation、Opposition 四类关系发布 | 目录按 `edges[].kind` 发，不看配置 |
+| 领域公理 | 本体 `axioms:` 里声明的规则，逐条校验 | 本体自己声明 |
+| 复合与派生 | 可复合的态射对、复合得出且未声明的关系 | 复合表 |
+
+两处 0 会带原因写进报告，不只写数字：结构公理为 0 时说明「本体的关系种类不属那四类，不是没配」；派生为 0 时区分「没有任何两条关系首尾相接」与「复合结果都已在声明里」。领域公理为 0 时说明「没写 `axioms:` 子句，这是规则空白」。
+
+领域公理目前只支持 `cardinality` 的 `min: N`：`target` 必须是本体里的对象，计的是这个对象上 `relation` 种类的出边条数（恒等不算）。未知的公理类型按错误返回，不静默跳过。
+
+派生关系的判定：遍历声明边的可复合对，复合结果的端点对上已声明的边就算已声明（只比 `from` / `to`，不比种类）。
+
+## 报告
+
+外壳在 [`common.md`](common.md)：`Report` 的过程维度填两步（装载、分析，都是 Done），结果维度填 `loaded` 与 `analyzed`；`relations` 是声明边加派生关系的清单，`conclusion` 固定三句。装载段给对象与标签、态射的恒等与声明拆分；分析段给四组的通过情况与两个原因字段。
+
+md 与 json 同源：序列化同一份 `Report`，md 按 `results.loaded` 有没有值选版式，所以 inside 模块里没有第二份渲染逻辑。
+
+## CLI 与示例
+
+```bash
+cargo run -- category within qtcloud-meta-cli-category [--format json] [--out <路径>] [--strict]
+cargo run --example category_within          # 同一份实现的调用演示
 ```
 
-🏗️ 使用 lau-category-theory 构造范畴
+`--strict` 不改报告内容，只在任一组 `failed > 0` 时让 `run` 返回错误。
 
-将 YAML 中的概念和关系映射为库中的 Obj 和 Morphism，并构造 FiniteCategory：
+## 已知边界
 
-```rust
-use lau_category_theory::category::{FiniteCategory, Morphism, Obj};
-
-pub fn build_category(onto: &OntologyDef) -> FiniteCategory {
-    let mut cat = FiniteCategory::new(&onto.name);
-
-    // 1. 概念 → 对象 (Obj)
-    for concept in &onto.concepts {
-        cat.add_object(Obj(concept.name.clone()));
-    }
-
-    // 2. 边 → 态射 (Morphism)
-    for edge in &onto.edges {
-        let morphism = Morphism::new(
-            &edge.kind,
-            &Obj(edge.from.clone()),
-            &Obj(edge.to.clone()),
-        );
-        cat.add_morphism(morphism);
-    }
-
-    // 3. 构造复合表 (compose_table)
-    // 遍历所有态射对，若 f.to == g.from，则计算 f ∘ g
-    let morphisms = cat.morphisms.clone();
-    for f in &morphisms {
-        for g in &morphisms {
-            if f.cod == g.dom {
-                if let Some(composed) = cat.compose(f, g) {
-                    cat.set_composition(f, g, composed);
-                }
-            }
-        }
-    }
-
-    cat
-}
-```
-
-库 API 提示：FiniteCategory 通过对象、态射和复合表来定义。复合表 compose_table[(f_idx, g_idx)] = h_idx 记录了 f ∘ g = h 的结果。
-
-🔬 分析引擎
-
-① 范畴定律校验
-
-lau-category-theory 的 Functor 结构体提供了 check_identity_law 和 check_composition_law 方法，用于验证函子是否保持恒等和复合。虽然这些方法直接用于函子校验，但其底层逻辑可用于验证范畴本身的自洽性：
-
-```rust
-use lau_category_theory::functor::Functor;
-use lau_category_theory::category::FiniteCategory;
-
-pub fn check_category_laws(cat: &FiniteCategory) -> LawGroup {
-    let identity_functor = Functor::identity_functor(cat);
-    let identity_ok = identity_functor.check_identity_law(cat, cat);
-    let composition_ok = identity_functor.check_composition_law(cat, cat);
-    
-    LawGroup {
-        label: ”范畴定律“,
-        total: 2,
-        passed: (identity_ok as usize) + (composition_ok as usize),
-        failures: if !identity_ok { vec![”恒等律失败“.into()] } else { vec![] },
-    }
-}
-```
-
-② 结构公理校验
-
-检查是否存在 Subsumption、Parthood、Causation、Opposition 等结构关系。遍历所有态射，按 kind 分类统计：
-
-```rust
-pub fn check_structural_axioms(cat: &FiniteCategory) -> LawGroup {
-    let structural_kinds = [”Subsumption“, ”Parthood“, ”Causation“, ”Opposition“];
-    let found: Vec<_> = cat.morphisms.iter()
-        .filter(|m| structural_kinds.contains(&m.name.as_str()))
-        .collect();
-    
-    LawGroup {
-        label: ”结构公理“,
-        total: found.len(),
-        passed: found.len(), // 存在即通过（具体校验逻辑视规则而定）
-        failures: vec![],
-    }
-}
-```
-
-③ 领域公理校验
-
-从 YAML 的 axioms: 段读取规则，逐条检查。例如基数约束”内容必须发布在至少一个账号上“：
-
-```rust
-pub fn check_domain_axioms(cat: &FiniteCategory, axioms: &[AxiomDef]) -> Vec<LawGroup> {
-    let mut groups = vec![];
-    for axiom in axioms {
-        match axiom.axiom_type.as_str() {
-            ”cardinality“ => {
-                // 遍历所有 target 类型的对象，检查是否满足基数约束
-                let target_objs: Vec<_> = cat.objects.iter()
-                    .filter(|o| o.0 == axiom.target)
-                    .collect();
-                let mut passed = 0;
-                for obj in &target_objs {
-                    let outgoing: Vec<_> = cat.morphisms.iter()
-                        .filter(|m| m.dom == **obj && m.name == axiom.relation)
-                        .collect();
-                    if !outgoing.is_empty() {
-                        passed += 1;
-                    }
-                }
-                groups.push(LawGroup {
-                    label: &axiom.id,
-                    total: target_objs.len(),
-                    passed,
-                    failures: vec![],
-                });
-            }
-            _ => {}
-        }
-    }
-    groups
-}
-```
-
-④ 复合与派生关系检测
-
-利用 FiniteCategory 的复合表，找出复合结果不在已有态射集合中的派生关系：
-
-```rust
-pub fn find_derived_morphisms(cat: &FiniteCategory) -> Vec<Morphism> {
-    let declared: std::collections::HashSet<_> = cat.morphisms.iter()
-        .map(|m| (m.dom.clone(), m.cod.clone(), m.name.clone()))
-        .collect();
-    
-    let mut derived = vec![];
-    for f in &cat.morphisms {
-        for g in &cat.morphisms {
-            if f.cod != g.dom {
-                continue;
-            }
-            if let Some(composed) = cat.compose(f, g) {
-                let key = (composed.dom.clone(), composed.cod.clone(), composed.name.clone());
-                if !declared.contains(&key) 
-                    && !derived.iter().any(|d: &Morphism| 
-                        d.dom == composed.dom && d.cod == composed.cod && d.name == composed.name) {
-                    derived.push(composed);
-                }
-            }
-        }
-    }
-    derived
-}
-```
-
-📊 报告渲染
-
-报告结构与之前 within 命令的设计保持一致，支持 Markdown 和 JSON 双出口：
-
-```rust
-#[derive(Debug, Serialize)]
-pub struct Report {
-    pub category: String,
-    pub loaded: LoadedInfo,
-    pub analyzed: AnalyzedInfo,
-    pub witness: WitnessInfo,
-}
-
-#[derive(Debug, Serialize)]
-pub struct LoadedInfo {
-    pub objects: Vec<String>,
-    pub morphisms: Vec<MorphismInfo>,
-    pub counts: Counts,
-}
-
-#[derive(Debug, Serialize)]
-pub struct AnalyzedInfo {
-    pub groups: Vec<LawGroup>,
-    pub composable_pairs: usize,
-    pub derived: Vec<MorphismInfo>,
-}
-
-pub fn render_markdown(report: &Report) -> String {
-    // 与之前的 within 报告格式对齐
-    // 四段式：装载 / 分析 / 关系清单 / 给后续分析的结论
-    // 首行加范畴名
-    todo!()
-}
-
-pub fn render_json(report: &Report) -> serde_json::Value {
-    serde_json::to_value(report).unwrap()
-}
-```
-
-⌨️ CLI 集成
-
-```rust
-use clap::{Parser, Subcommand};
-
-#[derive(Parser)]
-#[command(name = ”qtcloud-meta“)]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// 范畴分析
-    Category {
-        #[command(subcommand)]
-        sub: CategoryCommands,
-    },
-}
-
-#[derive(Subcommand)]
-enum CategoryCommands {
-    /// 范畴内分析：装载与分析
-    Within {
-        /// 范畴标识符
-        category: String,
-        /// 输出格式
-        #[arg(long, default_value = ”md“)]
-        format: String,
-        /// 输出文件路径
-        #[arg(long)]
-        out: Option<String>,
-        /// 严格模式：公理失败即非零退出
-        #[arg(long)]
-        strict: bool,
-    },
-    /// 范畴间分析：选定 → 映射 → 冲突 → 缺失 → 结论
-    Between {
-        from: String,
-        to: String,
-        #[arg(long, default_value = ”md“)]
-        format: String,
-    },
-}
-```
-
-🗓️ 分阶段实施计划
-
-阶段 内容 可验证产出
-P0 YAML Schema 定义 + serde 解析 用 Media 示例跑通解析
-P1 concepts/edges → FiniteCategory 构造 3 对象 + 2 态射 + 复合表
-P2 范畴定律 + 结构公理 + 领域公理校验 输出与现有 within 报告一致
-P3 复合与派生关系检测 验证”可复合对、派生 0 条“
-P4 报告渲染（Markdown + JSON） 双格式同源
-P5 CLI 封装（within / between 子命令） —format / —out / —strict
-
-⚠️ 注意事项
-
-1. 库成熟度：lau-category-theory 版本为 0.1.0，文档覆盖率约 55%，API 可能不稳定。建议先在独立项目中验证核心功能，再集成到主项目。
-2. 依赖合规：该库引入 nalgebra 和 serde，需评估许可证合规性。
-3. 性能考量：FiniteCategory 的复合表使用 HashMap<(usize, usize), usize> 存储，对于大规模本体（对象/态射数量多）可能内存开销较大。建议对本体规模设置上限，或后续扩展为稀疏存储。
-4. 函子校验的复用：Functor 的 check_identity_law 和 check_composition_law 方法针对函子映射设计，直接用于范畴自洽性校验时需要构造恒等函子作为桥接。
-
-这个方案的核心思路是：YAML 定义本体 → serde 解析 → lau-category-theory 构造范畴 → 分析引擎（公理/复合/派生）→ 报告渲染（Markdown/JSON）→ CLI 封装。整个流程与之前 within 命令的设计保持一致，只是将底层的 pr4xis 替换为 lau-category-theory。
+公理类型只有 `cardinality` 一种，条件、唯一性、互斥都还写不进本体。结构公理只认四类规范关系，本体的 `Has*` 关系永远走不到它。派生关系的「已声明」只比端点，端点对上有平行边或自环时，复合出来的同端点关系会被当成已声明吞掉。图性质——自环、互指、无边概念——没有任何一组在查，本体规模也没有上限。
