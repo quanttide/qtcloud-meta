@@ -1,5 +1,7 @@
 # 三层极简架构方案
 
+> 当前重点：本体（L2）的写入流程与范畴（L3）的分析流程。主数据（L1）的写入流程暂缓，L1 仅保留结构定义。
+
 ## 一、整体结构
 
 ```
@@ -14,18 +16,20 @@
 │  存实际数据实例，可追溯、可审批、可版本化     │
 └─────────────────────────────────────────────┘
          ▲
-         │ 写入 / 读取
+         │ 本体写入 / 分析读取
          │
 ┌─────────────────────────────────────────────┐
 │  LLM 知识库（驱动引擎）                      │
-│  非结构化数据 → 抽取 → 对齐本体 → 写入主数据  │
-│  人类确认 → 审批通过 → 正式入库              │
+│  非结构化数据 → 抽取候选 → 对齐现有本体       │
+│  → 本体变更（待审批）→ 人类确认 → 写入本体    │
 └─────────────────────────────────────────────┘
 ```
 
-数据流向：非结构化输入 → LLM 抽取 → 对齐本体 → 写入主数据（待审批）→ 人类确认 → 正式入库。
+本体写入流向：非结构化输入 → LLM 抽取 → 对齐本体 → 本体变更（待审批）→ 人类确认 → 写入本体文件生效。
 
-人类确认是 LLM 知识库与三层之间的唯一关卡。LLM 的产出默认是 draft 状态，人类审批后才变为 active。
+范畴分析流向：元智能体分析任务 → 选定范畴 → 跨范畴映射翻译 → 冲突裁决 → 输出整合结论。
+
+人类确认是 LLM 知识库与三层之间的唯一关卡。LLM 的产出默认是 draft 状态，人类审批后才生效。
 
 ## 二、三层详细说明
 
@@ -115,7 +119,7 @@ CREATE TABLE change_request (
     rdfs:range xsd:string .
 ```
 
-约束：用 SHACL 定义校验规则，写入主数据时自动检查。
+约束：用 SHACL 定义校验规则，本体变更与数据写入时自动检查。
 
 ### L3 · 范畴层
 
@@ -163,11 +167,17 @@ CREATE TABLE conflict (
 );
 ```
 
-范畴层的作用：当元智能体需要整合不同方法论的结论时，查 `category_mapping` 做翻译；翻译不了时，查 `conflict` 看是否已有人类裁决；都没有时，生成一条 `change_request` 等人类确认。
+范畴分析流程（元智能体整合不同方法论结论时）：
 
-## 三、LLM 知识库：驱动引擎
+1. **选定范畴**：确定当前分析所处的范畴及其本体承诺。
+2. **映射翻译**：查 `category_mapping`，按函子规则把当前范畴的概念翻译到目标范畴。
+3. **冲突检查**：比对翻译后的断言，查 `conflict` 看是否已有人类裁决。
+4. **兜底升级**：映射不存在或无既往裁决时，生成一条 `change_request` 等人类确认。
+5. **输出结论**：在目标范畴下给出整合后的分析结论。
 
-这是把非结构化数据“灌入”三层结构的引擎。
+## 三、本体的写入流程：LLM 知识库（驱动引擎）
+
+这是把非结构化数据写入本体层（L2）的引擎。主数据（L1）的写入流程暂缓，本文不展开。
 
 ### 工作流程
 
@@ -176,28 +186,36 @@ CREATE TABLE conflict (
         │
         ▼
 ┌───────────────────┐
-│  LLM 抽取          │  用本体作为 schema 约束，让 LLM 输出结构化 JSON
-│  → 识别实体        │
-│  → 识别属性        │
-│  → 识别关系        │
-│  → 匹配到本体类    │
+│  LLM 抽取          │  从文本中抽取候选概念
+│  → 候选类          │
+│  → 候选属性        │
+│  → 候选关系        │
+│  → 附原文出处      │
 └───────────────────┘
         │
         ▼
 ┌───────────────────┐
-│  本体校验          │  SHACL 校验：类型对不对、必填字段有没有
+│  本体对齐          │  与现有本体比对：已有 → 复用
+│                   │  缺失 → 候选新增；矛盾 → 冲突候选
 └───────────────────┘
         │
         ▼
 ┌───────────────────┐
-│  写入主数据        │  status = 'draft'，生成 change_request
+│  本体校验          │  SHACL + 一致性检查：domain/range 对不对、
+│                   │  新增是否破坏现有定义
 └───────────────────┘
         │
         ▼
 ┌───────────────────┐
-│  人类确认          │  审批通过 → status = 'active'
+│  本体变更          │  生成 change_request（draft），
+│                   │  记录候选定义、对齐结果与出处
+└───────────────────┘
+        │
+        ▼
+┌───────────────────┐
+│  人类确认          │  审批通过 → 写入 Turtle/OWL 本体文件，生效
 │                   │  审批拒绝 → 丢弃或退回修改
-│                   │  参数修正 → human_edit 记录修正内容
+│                   │  修正内容 → human_edit 记录
 └───────────────────┘
 ```
 
@@ -207,7 +225,7 @@ CREATE TABLE conflict (
 |:--|:--|:--|
 | 本地 LLM | Ollama + Qwen2.5 / Llama3 | 本地跑，无需联网 |
 | 向量库 | ChromaDB 或 SQLite + sqlite-vec | 存非结构化原文的向量，做语义检索 |
-| 抽取框架 | LangChain 或 LlamaIndex | 编排「检索→抽取→校验→写入」流程 |
+| 抽取框架 | LangChain 或 LlamaIndex | 编排「检索→抽取→对齐→校验→写入本体」流程 |
 | 本体校验 | pySHACL | Python 库，本地校验 |
 | 推理 | Apache Jena 或 owlready2 | 本地 OWL 推理 |
 
@@ -215,9 +233,9 @@ CREATE TABLE conflict (
 
 ```python
 EXTRACT_PROMPT = """
-你是一个主数据抽取引擎。根据以下本体定义，从文本中抽取实体和关系。
+你是一个本体抽取引擎。从文本中抽取候选概念，用于扩充或修订本体。
 
-## 本体定义
+## 现有本体
 {ontology_ttl}
 
 ## 当前范畴
@@ -229,11 +247,12 @@ EXTRACT_PROMPT = """
 ## 输出要求
 返回 JSON 数组，每个元素格式：
 {{
-  "entity_type": "本体中的类名",
-  "data": {{"属性名": "值"}},
-  "relations": [
-    {{"type": "关系名", "target_entity_type": "类名", "target_data": {{...}}}}
-  ],
+  "candidate_kind": "class / property / relation",
+  "label": "候选概念名",
+  "definition": "一句话定义",
+  "domain": "（property/relation 必填）所属类",
+  "range": "（property/relation 必填）取值类型或目标类",
+  "matched_existing": "现有本体中对应的概念名，无则 null",
   "confidence": 0.0-1.0,
   "source_span": "原文片段"
 }}
@@ -246,65 +265,84 @@ EXTRACT_PROMPT = """
 
 不需要复杂的审批引擎。一张 `change_request` 表 + 一个简单的 Web 页面即可：
 
-- 页面列出所有 pending 的变更请求
-- 每条显示：LLM 抽取的原始内容、本体校验结果、风险等级
+- 页面列出所有 pending 的本体变更请求
+- 每条显示：LLM 抽取的候选概念、对齐结果（复用/新增/冲突）、本体校验结果、风险等级
 - 人类可以：批准 / 拒绝 / 修正后批准
 - 修正内容写入 `human_edit` 字段
-- 批准后自动更新 `entity.status = 'active'`
+- 批准后把变更写入 Turtle/OWL 本体文件，本体版本 +1
 
-## 四、一次完整的数据流示例
+## 四、两条重点流程示例
 
-场景：自媒体智能体从一篇草稿中抽取「内容」主数据。
+### 示例一 · 本体写入
 
-### Step 1 · LLM 抽取
+场景：一篇新文档引入了现有本体（Content / Account / Material）中没有的概念。
 
-输入草稿：
+输入文档片段：
 
-> 这篇《AI时代的MDM》准备发在公众号上，用了封面图A和配图B。
+> 矩阵内的账号按周排期统一供稿，每篇稿件先过选题会再进入制作。
 
-LLM 输出：
+**Step 1 · LLM 抽取**
 
 ```json
 [
   {
-    "entity_type": "Content",
-    "data": {"title": "AI时代的MDM", "status": "draft"},
-    "relations": [
-      {"type": "publishedOn", "target_entity_type": "Account", "target_data": {"name": "公众号"}},
-      {"type": "usesMaterial", "target_entity_type": "Material", "target_data": {"name": "封面图A"}},
-      {"type": "usesMaterial", "target_entity_type": "Material", "target_data": {"name": "配图B"}}
-    ],
-    "confidence": 0.92,
-    "source_span": "这篇《AI时代的MDM》准备发在公众号上..."
+    "candidate_kind": "class",
+    "label": "排期",
+    "definition": "账号供稿的时间安排",
+    "matched_existing": null,
+    "confidence": 0.87,
+    "source_span": "矩阵内的账号按周排期统一供稿"
+  },
+  {
+    "candidate_kind": "class",
+    "label": "选题会",
+    "definition": "稿件进入制作前的评审环节",
+    "matched_existing": null,
+    "confidence": 0.84,
+    "source_span": "每篇稿件先过选题会再进入制作"
   }
 ]
 ```
 
-### Step 2 · 本体校验
+**Step 2 · 本体对齐**
 
-pySHACL 检查：Content 类必须有 title（有）、status 必须是枚举值（有）、publishedOn 的 range 必须是 Account（是）。通过。
+现有本体只有 Content、Account、Material 三个类。「排期」「选题会」均无对应概念 → 两条候选新增，与现有定义无矛盾。
 
-### Step 3 · 写入主数据
+**Step 3 · 本体校验**
 
-- `entity` 表插入一条 Content，`status = 'draft'`
-- `entity` 表插入/关联 Account（如果已存在则复用）
-- `entity` 表插入/关联两个 Material
-- `relation` 表插入三条关系
-- `change_request` 表插入一条待审批记录
+pySHACL + 一致性检查：新增两个独立类，不改动现有类与属性，domain/range 引用的类都存在。通过。
 
-### Step 4 · 人类确认
+**Step 4 · 本体变更**
 
-审批人看到这条请求，确认标题、账号、素材都正确，点击批准。
+`change_request` 插入一条 pending 记录，action = `create`，`proposed_data` 记录候选类的 label、definition 与 source_span。
 
-### Step 5 · 正式入库
+**Step 5 · 人类确认**
 
-- `entity.status` 更新为 active
-- `change_request.decision` 更新为 approved
-- 写入审计日志
+审批人确认两个概念值得入本体，点击批准 → 候选类写入 Turtle 本体文件，本体生效；拒绝 → 丢弃或退回修改。
 
-### Step 6 · 范畴切换（如果需要）
+### 示例二 · 范畴分析
 
-如果元智能体要做流程分析，查 `category_mapping`，发现当前是「实体导向」范畴，需要映射到「流程导向」范畴。函子规则把「内容」映射为「发布活动」，把「素材」映射为「活动资源」。如果映射不存在，生成一条 `change_request` 等人类定义映射。
+场景：元智能体要做流程分析，当前处于「实体导向」范畴。
+
+**Step 1 · 选定范畴**
+
+当前范畴「实体导向」，本体承诺是实体、属性、关系。
+
+**Step 2 · 映射翻译**
+
+查 `category_mapping`，发现「实体导向」→「流程导向」的函子规则：「内容」→「发布活动」，「素材」→「活动资源」。按规则把分析对象翻译到目标范畴。
+
+**Step 3 · 冲突检查**
+
+查 `conflict`，看两个范畴对同一对象的断言是否已有人类裁决。无记录 → 继续；有 `true_conflict` 记录 → 按既往裁决处理。
+
+**Step 4 · 兜底升级**
+
+如果函子规则不存在，生成一条 `change_request` 等人类定义映射，分析暂停在当前范畴。
+
+**Step 5 · 输出结论**
+
+在「流程导向」范畴下给出流程视角的分析结论，回传给元智能体。
 
 ## 五、最小技术栈清单
 
