@@ -145,9 +145,12 @@ pub struct Options {
 
 // ───────────────────────── 装载 ─────────────────────────
 
-/// 按范畴标识定位本体文件：`ontology/<范畴>.yaml`。
+/// 按范畴标识定位本体文件：`examples/ontology/<范畴>.yaml`。
+///
+/// 本体是示例数据，归 `examples/`；`src/` 下只放实现。
 pub fn ontology_path(category: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("examples")
         .join("ontology")
         .join(format!("{category}.yaml"))
 }
