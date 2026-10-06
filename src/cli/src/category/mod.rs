@@ -1,5 +1,6 @@
 //! 范畴分析：范畴内（within）与范畴间（between）。
 //!
-//! 本轮只实现 within；between 的映射规则尚未定义，这里不代拟。
+//! within 装载本体、跑数学校验；between 只查表走五步，缺规则时停下等人填。
 
+pub mod between;
 pub mod within;

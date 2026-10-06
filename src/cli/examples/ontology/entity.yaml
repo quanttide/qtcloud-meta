@@ -1,0 +1,15 @@
+# ontology/entity.yaml
+# 实体导向范畴的本体。概念即本体承诺：实体、属性、关系。
+# 对应 docs/user-guide/index.md 范畴分析示例的源范畴。
+name: 实体导向
+source: "docs/user-guide/index.md 范畴分析示例"
+version: "1.0"
+
+concepts:
+  - { name: 实体, label: { zh: 实体 } }
+  - { name: 属性, label: { zh: 属性 } }
+  - { name: 关系, label: { zh: 关系 } }
+
+edges:
+  - { from: 实体, to: 属性, kind: HasAttribute }
+  - { from: 实体, to: 关系, kind: HasRelation }

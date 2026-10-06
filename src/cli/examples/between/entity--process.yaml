@@ -1,0 +1,10 @@
+# between/entity--process.yaml
+# 范畴间映射表：实体导向 → 流程导向。
+# 对应 docs/user-guide/category/between.md 的走查例子。
+# 冲突表留空——分析只认 true_conflict，其它类型忽略、继续。
+
+mappings:
+  - { from: 内容, to: 发布活动 }
+  - { from: 素材, to: 活动资源 }
+
+conflicts: []
