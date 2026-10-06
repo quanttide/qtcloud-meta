@@ -1,0 +1,38 @@
+# ontology/category.yaml
+name: Category
+source: "src/cli/src/category/within.rs 的模块结构"
+version: "1.0"
+
+concepts:
+  - { name: OntologyDef, label: { zh: 本体定义 } }
+  - { name: ConceptDef,  label: { zh: 概念定义 } }
+  - { name: EdgeDef,     label: { zh: 边定义 } }
+  - { name: AxiomDef,    label: { zh: 公理定义 } }
+  - { name: Report,      label: { zh: 报告 } }
+  - { name: LoadedInfo,  label: { zh: 装载结果 } }
+  - { name: AnalyzedInfo,label: { zh: 分析结果 } }
+  - { name: LawGroup,    label: { zh: 公理组 } }
+  - { name: RelationInfo,label: { zh: 关系行 } }
+
+edges:
+  - { from: OntologyDef, to: ConceptDef,   kind: HasConcepts }
+  - { from: OntologyDef, to: EdgeDef,      kind: HasEdges }
+  - { from: OntologyDef, to: AxiomDef,     kind: HasAxioms }
+  - { from: Report,      to: LoadedInfo,   kind: HasLoaded }
+  - { from: Report,      to: AnalyzedInfo, kind: HasAnalyzed }
+  - { from: AnalyzedInfo,to: LawGroup,     kind: HasLawGroup }
+  - { from: Report,      to: RelationInfo, kind: HasRelations }
+
+axioms:
+  - id: ax-report-has-loaded
+    description: "报告必须有装载段"
+    type: cardinality
+    target: Report
+    relation: HasLoaded
+    constraint: "min: 1"
+  - id: ax-report-has-analyzed
+    description: "报告必须有分析段"
+    type: cardinality
+    target: Report
+    relation: HasAnalyzed
+    constraint: "min: 1"
