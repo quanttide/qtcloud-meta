@@ -13,12 +13,13 @@
 
 ## 日常检查
 
-改动后本地双绿再提交，与 CI 保持一致：
+改动后本地跑通与 CI 相同的检查再提交。CI 配置在 `.github/workflows/ci.yml`，push 与 PR 时在 `src/cli` 下执行同样四步：
 
 ```bash
+cargo build --locked
+cargo test --locked
+cargo clippy --locked -- -D warnings
 cargo fmt --check
-cargo clippy -- -D warnings
-cargo build
 ```
 
 ## 文档同步
