@@ -1,5 +1,8 @@
 //! 范畴内分析的调用示例：实现全在 `src/category/within.rs`，这里只演示怎么调。
 //!
+//! 演示用的本体是 `examples/ontology/category.yaml`——它描述的就是范畴分析模块自己的结构
+//! （`OntologyDef` / `Report` / `LawGroup` 等九个类型作概念，`Has*` 作关系）。
+//!
 //! 对应文档：`docs/user-guide/category/within.md`（报告要说清什么）、
 //! `docs/dev-guide/category/within.md`（实现方案）。
 //!
@@ -7,7 +10,7 @@
 //!
 //! ```text
 //! cargo run --example category_within       # 打印 Markdown 报告
-//! cargo run -- --category within media      # 命令行接口，可加 --format json / --out / --strict
+//! cargo run -- --category within category   # 命令行接口，可加 --format json / --out / --strict
 //! ```
 
 use qtcloud_meta_cli::category::within::{self, Options};
@@ -19,7 +22,7 @@ fn main() {
         strict: false,
     };
 
-    if let Err(message) = within::run("media", &options) {
+    if let Err(message) = within::run("category", &options) {
         eprintln!("错误：{message}");
         std::process::exit(1);
     }
