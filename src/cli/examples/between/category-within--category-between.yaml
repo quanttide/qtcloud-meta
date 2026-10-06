@@ -11,17 +11,20 @@ mappings:
   - { from: OntologyDef, to: BetweenDef }
   # 输入表里的有向行——边是 from→to，映射也是 from→to
   - { from: EdgeDef, to: MappingDef }
-  # 报告本体——两边交给下游分析的都是它
+  # 公共结构——两边现在共用同一批类型，同名对同名（见 docs/dev-guide/category/common.md）
   - { from: Report, to: Report }
-  # 报告里的分段——范畴内分「装载 / 分析」，范畴间分「五步」
-  - { from: LoadedInfo, to: StepInfo }
-  - { from: AnalyzedInfo, to: StepInfo }
+  - { from: Step, to: Step }
+  - { from: StepStatus, to: StepStatus }
+  - { from: Results, to: Results }
+  # 结果维度自身对应——不再跨到过程维度（这次融合修正的正是这里）
+  - { from: LoadedInfo, to: LoadedInfo }
+  - { from: AnalyzedInfo, to: AnalyzedInfo }
   # 报告末尾的清单行——范畴内是关系行，范畴间是翻译行
   - { from: RelationInfo, to: TranslationInfo }
 
 conflicts: []
 
-# 留白（这三类在范畴间那侧没有对口的概念，不硬凑）：
+# 留白（这几类在范畴间那侧没有对口的概念，不硬凑）：
 #   ConceptDef —— 范畴间那侧的行都是成对的（from→to），没有单名概念行
 #   AxiomDef   —— 范畴间的输入表里没有公理/约束这一类行
 #   LawGroup   —— 范畴间不做公理校验，没有对应分组

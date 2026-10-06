@@ -132,6 +132,8 @@ fn unregistered_report(from_label: &str, to_label: &str, name: &str) -> Report {
     }
     Report {
         category: format!("{from_label} → {to_label}"),
+        from: Some(from_label.to_string()),
+        to: Some(to_label.to_string()),
         source: None,
         trace,
         results: Results {
@@ -199,6 +201,8 @@ pub fn build_report(
 
         return Report {
             category: format!("{from_name} → {to_name}"),
+            from: Some(from_name.to_string()),
+            to: Some(to_name.to_string()),
             source: None,
             trace,
             results: Results {
@@ -266,6 +270,8 @@ pub fn build_report(
 
     Report {
         category: format!("{from_name} → {to_name}"),
+        from: Some(from_name.to_string()),
+        to: Some(to_name.to_string()),
         source: None,
         trace,
         results: Results {

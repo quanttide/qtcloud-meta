@@ -468,6 +468,8 @@ pub fn build_report(onto: &OntologyDef, cat: &FiniteCategory) -> Report {
 
     Report {
         category: onto.name.clone(),
+        from: None,
+        to: None,
         source: onto.source.clone(),
         trace: vec![
             Step {

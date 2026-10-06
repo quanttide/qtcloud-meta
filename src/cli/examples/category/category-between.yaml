@@ -1,8 +1,8 @@
 # examples/category/category-between.yaml —— 范畴「category-between」的本体定义
-# 描述的是范畴间（between）实现自己的结构：src/category/between.rs 里的类型作概念，
-# 类型之间的关系作边，报告必须具备的段落作公理。schema 见 docs/dev-guide/category/within.md。
+# 描述的是范畴间（between）实现自己的结构：src/category/between.rs 与共用的 common.rs 里的
+# 类型作概念，类型之间的关系作边，报告必须具备的段落作公理。schema 见 docs/dev-guide/category/within.md。
 name: CategoryBetween
-source: "src/cli/src/category/between.rs 的模块结构"
+source: "src/cli/src/category/{between.rs, common.rs} 的模块结构"
 version: "1.0"
 
 concepts:
@@ -10,20 +10,23 @@ concepts:
   - { name: MappingDef,      label: { zh: 映射行 } }
   - { name: ConflictDef,     label: { zh: 冲突行 } }
   - { name: Report,          label: { zh: 范畴间报告 } }
-  - { name: StepInfo,        label: { zh: 步骤行 } }
+  - { name: Step,            label: { zh: 步骤行 } }
+  - { name: StepStatus,      label: { zh: 步骤状态 } }
+  - { name: Results,         label: { zh: 结果 } }
   - { name: TranslationInfo, label: { zh: 翻译行 } }
-  - { name: Options,         label: { zh: 命令行选项 } }
 
 edges:
   - { from: BetweenDef, to: MappingDef,      kind: HasMappings }
   - { from: BetweenDef, to: ConflictDef,     kind: HasConflicts }
-  - { from: Report,     to: StepInfo,        kind: HasSteps }
-  - { from: Report,     to: TranslationInfo, kind: HasConclusion }
+  - { from: Report,     to: Step,            kind: HasTrace }
+  - { from: Report,     to: Results,         kind: HasResults }
+  - { from: Step,       to: StepStatus,      kind: HasStatus }
+  - { from: Results,    to: TranslationInfo, kind: HasTranslation }
 
 axioms:
-  - id: ax-report-has-steps
-    description: "范畴间报告必须有步骤段"
+  - id: ax-report-has-trace
+    description: "范畴间报告必须有过程轨迹（五步走，走到哪步都要记）"
     type: cardinality
     target: Report
-    relation: HasSteps
+    relation: HasTrace
     constraint: "min: 1"

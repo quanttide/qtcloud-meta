@@ -52,7 +52,14 @@ pub struct Results {
 /// 一份报告：过程轨迹 + 结果，外加关系清单、结论、挂起项三个公共出口。
 #[derive(Debug, Serialize)]
 pub struct Report {
+    /// 给人看的报告标题。范畴内是范畴名；范畴间是「源 → 目标」。
     pub category: String,
+    /// 范畴间专用：源范畴名与目标范畴名的可机读形式；范畴内留空。
+    /// 之所以单列，是因为 `category` 在两侧含义不同，同一个键不该有两种意思。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub to: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
     pub trace: Vec<Step>,
