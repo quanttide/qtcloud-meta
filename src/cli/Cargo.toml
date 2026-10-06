@@ -7,6 +7,11 @@ edition = "2024"
 name = "qtcloud-meta"
 path = "src/main.rs"
 
-[dev-dependencies]
-# 版本锁 0.29.1，引入结论与许可证待办见 data/report/decision/pr4xis.md
-pr4xis = "0.29.1"
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+# 范畴论底座，替换 pr4xis（CC-BY-NC-SA-4.0，禁商用）
+lau-category-theory = "0.1.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# serde_yaml 已归档，改用维护中的 serde_yml
+serde_yml = "0.0"
