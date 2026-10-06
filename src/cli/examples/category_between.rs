@@ -1,4 +1,4 @@
-//! 范畴间分析的调用示例：实现全在 `src/category/between.rs`，这里只演示怎么调。
+//! 范畴间分析的调用示例：实现全在 `src/category/between/`（融合型在 `unify.rs`），这里只演示怎么调。
 //!
 //! 走的是工具自己的两个范畴——`category-within`（描述范畴内实现的本体）到
 //! `category-between`（描述范畴间实现的本体）：本体在 `examples/category/` 下，
