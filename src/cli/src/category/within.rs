@@ -4,13 +4,15 @@
 //! 分析引擎（范畴定律 / 结构公理 / 领域公理 / 复合与派生）→ 报告渲染。
 //!
 //! 底座是 lau-category-theory 0.1.0（MIT），替换原 pr4xis
-//! （CC-BY-NC-SA-4.0，禁商用）。Markdown 与 JSON 两个出口共用同一份
-//! [`Report`]，不各算一遍。
+//! （CC-BY-NC-SA-4.0，禁商用）。报告走 [`super::common::Report`]，Markdown 与
+//! JSON 两个出口共用同一份，不各算一遍。
 
 use lau_category_theory::category::{FiniteCategory, Morphism, Obj};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+
+use super::common::{Report, Results, Step, StepStatus, render_json, render_markdown};
 
 /// 结构公理只对这四类规范关系种类发布，别的种类不发布。
 const STRUCTURAL_KINDS: [&str; 4] = ["Subsumption", "Parthood", "Causation", "Opposition"];
@@ -60,18 +62,9 @@ pub struct AxiomDef {
 }
 
 // ───────────────────────── 报告数据 ─────────────────────────
-
-/// 一份报告：装载、分析、关系清单、给后续分析的结论。
-#[derive(Debug, Serialize)]
-pub struct Report {
-    pub category: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source: Option<String>,
-    pub loaded: LoadedInfo,
-    pub analyzed: AnalyzedInfo,
-    pub relations: Vec<RelationInfo>,
-    pub conclusion: Vec<String>,
-}
+//
+// 报告外壳（Report / Results / Step）在 [`super::common`]；这里只放装载与分析的
+// 结果类型，结构保持不变。
 
 /// 装载结果。
 #[derive(Debug, Serialize)]
@@ -476,103 +469,36 @@ pub fn build_report(onto: &OntologyDef, cat: &FiniteCategory) -> Report {
     Report {
         category: onto.name.clone(),
         source: onto.source.clone(),
-        loaded: LoadedInfo {
-            objects,
-            morphisms,
-            counts,
+        trace: vec![
+            Step {
+                name: "装载".to_string(),
+                status: StepStatus::Done,
+                note: None,
+            },
+            Step {
+                name: "分析".to_string(),
+                status: StepStatus::Done,
+                note: None,
+            },
+        ],
+        results: Results {
+            loaded: Some(LoadedInfo {
+                objects,
+                morphisms,
+                counts,
+            }),
+            analyzed: Some(analyzed),
+            translation: None,
         },
-        analyzed,
         relations,
         conclusion,
+        pending: None,
     }
 }
 
 // ───────────────────────── 渲染 ─────────────────────────
-
-/// Markdown 出口。
-pub fn render_markdown(report: &Report) -> String {
-    let mut out = String::new();
-    out.push_str(&format!("# 范畴分析报告：{}\n\n", report.category));
-    if let Some(source) = &report.source {
-        out.push_str(&format!("数据源：{source}\n"));
-    }
-    out.push_str("方法：lau-category-theory 0.1.0 的范畴构造、恒等、复合与公理校验\n\n");
-
-    out.push_str("## 装载\n");
-    let names: Vec<&str> = report
-        .loaded
-        .objects
-        .iter()
-        .map(|o| o.name.as_str())
-        .collect();
-    out.push_str(&format!(
-        "- 对象 {} 个：{}\n",
-        report.loaded.counts.objects,
-        names.join("、")
-    ));
-    for object in &report.loaded.objects {
-        if let Some(label) = object.label.get("zh") {
-            out.push_str(&format!("  - {} = {}\n", object.name, label));
-        }
-    }
-    out.push_str(&format!(
-        "- 态射 {} 条 = 恒等 {} 条 + 声明 {} 条\n\n",
-        report.loaded.counts.total_morphisms,
-        report.loaded.counts.identities,
-        report.loaded.counts.declared
-    ));
-
-    out.push_str("## 分析\n");
-    for group in &report.analyzed.groups {
-        out.push_str(&format!(
-            "- {}：共 {} 条，通过 {}，失败 {}\n",
-            group.label, group.total, group.passed, group.failed
-        ));
-        for failure in &group.failures {
-            out.push_str(&format!("  - 失败：{failure}\n"));
-        }
-        if let Some(reason) = &group.reason {
-            out.push_str(&format!("  - 原因：{reason}\n"));
-        }
-    }
-    out.push_str(&format!(
-        "- 可复合的态射对：{} 对\n",
-        report.analyzed.composable_pairs
-    ));
-    out.push_str(&format!(
-        "- 派生关系（复合得出且未声明）：{} 条\n",
-        report.analyzed.derived.len()
-    ));
-    if let Some(reason) = &report.analyzed.derived_reason {
-        out.push_str(&format!("  - 原因：{reason}\n"));
-    }
-
-    out.push_str("\n## 关系清单\n");
-    for relation in &report.relations {
-        if relation.derived {
-            out.push_str(&format!(
-                "{} -[{}]-> {}（派生）\n",
-                relation.from, relation.kind, relation.to
-            ));
-        } else {
-            out.push_str(&format!(
-                "{} -[{}]-> {}\n",
-                relation.from, relation.kind, relation.to
-            ));
-        }
-    }
-
-    out.push_str("\n## 给后续分析的结论\n");
-    for (index, line) in report.conclusion.iter().enumerate() {
-        out.push_str(&format!("{}. {line}\n", index + 1));
-    }
-    out
-}
-
-/// JSON 出口；与 Markdown 同源，序列化同一份 [`Report`]。
-pub fn render_json(report: &Report) -> Result<String, String> {
-    serde_json::to_string_pretty(report).map_err(|e| format!("JSON 序列化失败：{e}"))
-}
+//
+// Markdown 与 JSON 两个出口在 [`super::common`]，within 与 between 共用。
 
 // ───────────────────────── CLI 入口 ─────────────────────────
 
@@ -595,7 +521,11 @@ pub fn run(category: &str, options: &Options) -> Result<(), String> {
         None => print!("{text}"),
     }
 
-    let failed: usize = report.analyzed.groups.iter().map(|g| g.failed).sum();
+    let failed: usize = report
+        .results
+        .analyzed
+        .as_ref()
+        .map_or(0, |analyzed| analyzed.groups.iter().map(|g| g.failed).sum());
     if options.strict && failed > 0 {
         return Err(format!("严格模式：有 {failed} 条公理失败"));
     }

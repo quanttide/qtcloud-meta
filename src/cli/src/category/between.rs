@@ -4,12 +4,13 @@
 //! 只查表（本体、映射表、冲突表），表里没有的规则不代拟；缺规则时生成
 //! change_request，停在原地等人填——这是停机位，不是错误。
 //!
-//! 底座复用 [`super::within::load_ontology`] 装载本体；Markdown 与 JSON
-//! 两个出口共用同一份 [`Report`]，不各算一遍。
+//! 底座复用 [`super::within::load_ontology`] 装载本体；报告走
+//! [`super::common::Report`]，Markdown 与 JSON 两个出口共用同一份，不各算一遍。
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
+use super::common::{Report, Results, Step, StepStatus, render_json, render_markdown};
 use super::within::{self, OntologyDef};
 
 // ───────────────────────── YAML 映射/冲突 schema ─────────────────────────
@@ -49,25 +50,8 @@ pub struct ConflictDef {
 }
 
 // ───────────────────────── 报告数据 ─────────────────────────
-
-/// 一份范畴间报告：走的步、翻出的结论、挂起的变更请求。
-#[derive(Debug, Serialize)]
-pub struct Report {
-    pub from: String,
-    pub to: String,
-    pub steps: Vec<StepInfo>,
-    pub conclusion: Vec<TranslationInfo>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub pending: Option<String>,
-}
-
-/// 一步：编号、名称、一句话说明。
-#[derive(Debug, Serialize)]
-pub struct StepInfo {
-    pub step: u8,
-    pub label: String,
-    pub detail: String,
-}
+//
+// 报告外壳（Report / Results / Step）在 [`super::common`]；这里只放翻译结果类型。
 
 /// 一条翻译结论：源概念 → 目标概念。
 #[derive(Debug, Serialize)]
@@ -132,16 +116,30 @@ fn change_request_id(from_name: &str, to_name: &str) -> String {
     format!("cr-map-{from_name}-{to_name}")
 }
 
-/// 未注册范畴的停机报告：只有第 1 步，写明「未注册，停」。
+/// 未注册范畴的停机报告：第 1 步写明「未注册，停」，其余四步未走到。
 fn unregistered_report(from_label: &str, to_label: &str, name: &str) -> Report {
+    let mut trace = vec![Step {
+        name: "选定范畴".to_string(),
+        status: StepStatus::Done,
+        note: Some(format!("{name} 未注册，停")),
+    }];
+    for step_name in ["映射翻译", "冲突检查", "规则缺失", "输出结论"] {
+        trace.push(Step {
+            name: step_name.to_string(),
+            status: StepStatus::Skipped,
+            note: None,
+        });
+    }
     Report {
-        from: from_label.to_string(),
-        to: to_label.to_string(),
-        steps: vec![StepInfo {
-            step: 1,
-            label: "选定范畴".to_string(),
-            detail: format!("{name} 未注册，停"),
-        }],
+        category: format!("{from_label} → {to_label}"),
+        source: None,
+        trace,
+        results: Results {
+            loaded: None,
+            analyzed: None,
+            translation: None,
+        },
+        relations: Vec::new(),
         conclusion: Vec::new(),
         pending: None,
     }
@@ -154,15 +152,6 @@ pub fn build_report(
     commitment: &str,
     table: Option<&BetweenDef>,
 ) -> Report {
-    let mut steps: Vec<StepInfo> = Vec::new();
-
-    // 第 1 步：选定范畴
-    steps.push(StepInfo {
-        step: 1,
-        label: "选定范畴".to_string(),
-        detail: format!("{from_name}，本体承诺 {commitment}"),
-    });
-
     let mappings: &[MappingDef] = table.map(|t| t.mappings.as_slice()).unwrap_or(&[]);
 
     // 第 2 步：映射翻译。没有规则，或某条断言没有对应规则，都进第 4 步。
@@ -175,34 +164,58 @@ pub fn build_report(
             .map(|m| format!("断言『{}』没有对应规则", m.from))
     };
 
-    if let Some(detail) = missing {
-        steps.push(StepInfo {
-            step: 2,
-            label: "映射翻译".to_string(),
-            detail,
-        });
+    // 过程轨迹固定五步：走到的是 Done，没走到的是 Skipped，停机位（规则缺失）是 Pending。
+    let mut trace: Vec<Step> = vec![Step {
+        name: "选定范畴".to_string(),
+        status: StepStatus::Done,
+        note: Some(format!("{from_name}，本体承诺 {commitment}")),
+    }];
 
+    if let Some(detail) = missing {
         // 第 4 步：规则缺失。停机位，等人类定义规则，不往下走。
         let change_request = change_request_id(from_name, to_name);
-        steps.push(StepInfo {
-            step: 4,
-            label: "规则缺失".to_string(),
-            detail: format!("生成 change_request {change_request}，分析暂停在当前范畴"),
+        trace.push(Step {
+            name: "映射翻译".to_string(),
+            status: StepStatus::Done,
+            note: Some(detail),
+        });
+        trace.push(Step {
+            name: "冲突检查".to_string(),
+            status: StepStatus::Skipped,
+            note: None,
+        });
+        trace.push(Step {
+            name: "规则缺失".to_string(),
+            status: StepStatus::Pending,
+            note: Some(format!(
+                "生成 change_request {change_request}，分析暂停在当前范畴"
+            )),
+        });
+        trace.push(Step {
+            name: "输出结论".to_string(),
+            status: StepStatus::Skipped,
+            note: None,
         });
 
         return Report {
-            from: from_name.to_string(),
-            to: to_name.to_string(),
-            steps,
+            category: format!("{from_name} → {to_name}"),
+            source: None,
+            trace,
+            results: Results {
+                loaded: None,
+                analyzed: None,
+                translation: None,
+            },
+            relations: Vec::new(),
             conclusion: Vec::new(),
             pending: Some(change_request),
         };
     }
 
-    steps.push(StepInfo {
-        step: 2,
-        label: "映射翻译".to_string(),
-        detail: format!("查到 {} 条规则", mappings.len()),
+    trace.push(Step {
+        name: "映射翻译".to_string(),
+        status: StepStatus::Done,
+        note: Some(format!("查到 {} 条规则", mappings.len())),
     });
 
     // 第 3 步：冲突检查。只认 true_conflict；其它类型忽略、继续。
@@ -211,83 +224,64 @@ pub fn build_report(
             .iter()
             .find(|c| c.conflict_type == "true_conflict")
     });
-    match true_conflict {
+    let conflict_note = match true_conflict {
         Some(conflict) => {
             let resolution = conflict
                 .resolution
                 .clone()
                 .unwrap_or_else(|| "（未写裁决内容）".to_string());
-            steps.push(StepInfo {
-                step: 3,
-                label: "冲突检查".to_string(),
-                detail: format!("命中 true_conflict，按既往裁决处理：{resolution}"),
-            });
+            format!("命中 true_conflict，按既往裁决处理：{resolution}")
         }
-        None => {
-            steps.push(StepInfo {
-                step: 3,
-                label: "冲突检查".to_string(),
-                detail: "无 true_conflict 记录，按主文档继续".to_string(),
-            });
-        }
-    }
+        None => "无 true_conflict 记录，按主文档继续".to_string(),
+    };
+    trace.push(Step {
+        name: "冲突检查".to_string(),
+        status: StepStatus::Done,
+        note: Some(conflict_note),
+    });
+    trace.push(Step {
+        name: "规则缺失".to_string(),
+        status: StepStatus::Skipped,
+        note: None,
+    });
 
     // 第 5 步：输出结论
-    let conclusion: Vec<TranslationInfo> = mappings
+    let translation: Vec<TranslationInfo> = mappings
         .iter()
         .map(|m| TranslationInfo {
             from: m.from.clone(),
             to: m.to.clone(),
         })
         .collect();
-    steps.push(StepInfo {
-        step: 5,
-        label: "输出结论".to_string(),
-        detail: format!("{} 条断言翻到「{to_name}」", conclusion.len()),
+    trace.push(Step {
+        name: "输出结论".to_string(),
+        status: StepStatus::Done,
+        note: Some(format!("{} 条断言翻到「{to_name}」", translation.len())),
     });
 
+    let conclusion: Vec<String> = translation
+        .iter()
+        .map(|t| format!("{} → {}", t.from, t.to))
+        .collect();
+
     Report {
-        from: from_name.to_string(),
-        to: to_name.to_string(),
-        steps,
+        category: format!("{from_name} → {to_name}"),
+        source: None,
+        trace,
+        results: Results {
+            loaded: None,
+            analyzed: None,
+            translation: Some(translation),
+        },
+        relations: Vec::new(),
         conclusion,
         pending: None,
     }
 }
 
 // ───────────────────────── 渲染 ─────────────────────────
-
-/// Markdown 出口。
-pub fn render_markdown(report: &Report) -> String {
-    let mut out = String::new();
-    out.push_str(&format!("# 范畴间报告：{} → {}\n", report.from, report.to));
-    for step in &report.steps {
-        out.push_str(&format!(
-            "- {} {}：{}\n",
-            step.step, step.label, step.detail
-        ));
-    }
-    match &report.pending {
-        Some(change_request) => {
-            out.push_str(&format!("- 挂起：{change_request} 等人类定义规则\n"));
-        }
-        None if !report.conclusion.is_empty() => {
-            let pairs: Vec<String> = report
-                .conclusion
-                .iter()
-                .map(|t| format!("{} → {}", t.from, t.to))
-                .collect();
-            out.push_str(&format!("- 结论：{}\n", pairs.join("；")));
-        }
-        None => {}
-    }
-    out
-}
-
-/// JSON 出口；与 Markdown 同源，序列化同一份 [`Report`]。
-pub fn render_json(report: &Report) -> Result<String, String> {
-    serde_json::to_string_pretty(report).map_err(|e| format!("JSON 序列化失败：{e}"))
-}
+//
+// Markdown 与 JSON 两个出口在 [`super::common`]，within 与 between 共用。
 
 // ───────────────────────── CLI 入口 ─────────────────────────
 
