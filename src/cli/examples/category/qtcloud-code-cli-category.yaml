@@ -1,0 +1,68 @@
+# examples/category/qtcloud-code-cli-category.yaml —— 范畴「qtcloud-code-cli-category」的本体定义
+#
+# 描述的是 qtcloud-code CLI（多语言代码静态分析与质量检测）的领域模型：
+# 约束（契约）→ AI 生成 → audit + review 校验，reflect 供证据、refactor 做变换。
+# 类型作概念，类型之间的包含/引用关系作边，领域里必须成立的规则作公理。
+# schema 见 docs/dev-guide/category/within.md。
+# 只读提炼自仓库外 qtcloud-code/src/cli，未改动其任何文件。
+name: QtcloudCodeCliCategory
+source: "/home/iguo/repos/quanttide/domains/quanttide-code/apps/qtcloud-code/src/cli：README.md 与 docs/dev-guide/index.md，src/{config.rs, contract.rs, audit.rs, detector/mod.rs, review.rs, llm.rs, evidence.rs, reflect/mod.rs, refactor/rename.rs} 的领域模型"
+version: "1.0"
+
+concepts:
+  # 约束：契约是生成任务的规格输入，不是事后检查清单
+  - { name: ContractConfig,      label: { zh: 契约定义（.quanttide/code/contract.yaml 的根） } }
+  - { name: CodeConfig,          label: { zh: 代码检测规则配置（rules / exclude） } }
+  - { name: AuditConfig,         label: { zh: 对齐审计配置（代码/测试/文档路径与校验边开关） } }
+  # audit：对齐约束，产出问题清单
+  - { name: AlignResult,         label: { zh: 对齐审计结果 } }
+  - { name: AlignIssue,          label: { zh: 一条对齐问题（类型/API/位置/期望/实际），即 AI 的修正任务 } }
+  - { name: ApiSignature,        label: { zh: 函数 API 签名（名/参数/位置） } }
+  - { name: TestRef,             label: { zh: 测试里的一次 API 引用 } }
+  # review：质量约束，规则引擎 + LLM
+  - { name: CodeFinding,         label: { zh: 一条检测发现（规则命中） } }
+  - { name: CodeSeverity,        label: { zh: 检测级别（MUST/SHOULD/MAY） } }
+  - { name: CodeEnrichedFinding, label: { zh: LLM 增强后的发现（原始信息 + LLM 判断） } }
+  - { name: LlmInfo,             label: { zh: LLM 对一条发现的增强（优先级/解释/自评） } }
+  # 证据主线：未判定的素材与有序组织
+  - { name: CodeEvidence,        label: { zh: 证据信封（reflect 各输出的统一形态） } }
+  - { name: CodeEvidenceChain,   label: { zh: 证据链：同一组证据的有序组织 + 来源与目标 } }
+  # refactor：符号变换
+  - { name: CodeSymbolTable,     label: { zh: 符号表：符号定义 → 所有引用位置 } }
+  - { name: CodeSymbol,          label: { zh: 一个符号（名/种类/定义位置/引用列表） } }
+  - { name: CodeSymbolKind,      label: { zh: 符号种类（Function/Variable/Module） } }
+  - { name: CodeRefLocation,     label: { zh: 一处引用位置（文件/行） } }
+
+edges:
+  # 约束
+  - { from: ContractConfig,  to: CodeConfig,      kind: HasCodeConfig }
+  - { from: ContractConfig,  to: AuditConfig,     kind: HasAuditConfig }
+  # audit
+  - { from: AlignResult,     to: AlignIssue,      kind: HasIssues }
+  - { from: AlignResult,     to: ApiSignature,    kind: HasCodeApis }
+  - { from: AlignResult,     to: ApiSignature,    kind: HasDocApis }
+  - { from: AlignResult,     to: TestRef,         kind: HasTestRefs }
+  # review
+  - { from: CodeFinding,     to: CodeSeverity,    kind: HasSeverity }
+  - { from: CodeEnrichedFinding, to: LlmInfo,     kind: HasLlm }
+  # 证据主线
+  - { from: CodeEvidenceChain, to: CodeEvidence,  kind: HasItems }
+  - { from: CodeEvidence,    to: CodeEvidence,    kind: HasUsages }
+  # refactor
+  - { from: CodeSymbolTable, to: CodeSymbol,      kind: HasSymbols }
+  - { from: CodeSymbol,      to: CodeSymbolKind,  kind: HasKind }
+  - { from: CodeSymbol,      to: CodeRefLocation, kind: HasRefs }
+
+axioms:
+  - id: ax-finding-has-severity
+    description: "一条检测发现必须有级别"
+    type: cardinality
+    target: CodeFinding
+    relation: HasSeverity
+    constraint: "min: 1"
+  - id: ax-symbol-has-kind
+    description: "一个符号必须有种类"
+    type: cardinality
+    target: CodeSymbol
+    relation: HasKind
+    constraint: "min: 1"

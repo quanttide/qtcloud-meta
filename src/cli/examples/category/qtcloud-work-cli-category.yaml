@@ -1,0 +1,73 @@
+# examples/category/qtcloud-work-cli-category.yaml —— 范畴「qtcloud-work-cli-category」的本体定义
+#
+# 描述的是 qtcloud-work CLI（量潮工作云：工作流 / 工单 / 判据）的领域模型：
+# 工作流定义干什么、工单记这一趟怎么走、判据判算不算完。
+# 类型作概念，类型之间的包含/指认关系作边，领域里必须成立的规则作公理。
+# schema 见 docs/dev-guide/category/within.md。
+# 只读提炼自仓库外 qtcloud-work/src/cli，未改动其任何文件。
+name: QtcloudWorkCliCategory
+source: "/home/iguo/repos/quanttide/domains/quanttide-work/apps/qtcloud-work/src/cli：README.md，src/{workspace/model.rs, workflow/model.rs, workflow/read.rs, criterion/model.rs, order/model.rs, order/record.rs, order/mod.rs, artifact/model.rs, artifact/mod.rs, material/mod.rs, catalog/mod.rs, outcome.rs} 的领域模型"
+version: "1.0"
+
+concepts:
+  # 工作区：身份六字段
+  - { name: Workspace,  label: { zh: 工作区身份（id/name/title/description/created_at/updated_at） } }
+  # 工作流：过程的编排
+  - { name: Workflow,   label: { zh: 工作流：一串有序的步骤 } }
+  - { name: Step,       label: { zh: 工作步骤：叫什么、做什么、谁执行、怎么算完 } }
+  - { name: Criterion,  label: { zh: 判据：谁判（rule/agent/human）、怎么判、说明 } }
+  # 工单：一次行程的账本
+  - { name: WorkOrder,  label: { zh: 工单：一次行程的封面（id/name/workflow_id/records） } }
+  - { name: WorkRecord, label: { zh: 工作记录：流水里的一笔，只增不改 } }
+  - { name: Order,      label: { zh: 一本打开的账：位置装载 + 工单 + 所引工作流 } }
+  # 产物与资产
+  - { name: Artifact,   label: { zh: 产物：名字 + 规格（一组验收判据） } }
+  - { name: Asset,      label: { zh: 资产类型：陈述型九宫格与程序型九宫格 } }
+  # 工作区命令：材料与目录
+  - { name: Material,   label: { zh: 材料：还没做成成品的输入（类型/内容/来源/时间） } }
+  - { name: Catalog,    label: { zh: 目录：工作区资产的名字索引快照 } }
+  - { name: Entry,      label: { zh: 目录里的一条：类别、路径、全部名字 } }
+  # 动作答复
+  - { name: Outcome,    label: { zh: 一次动作的答复：通不通、话、表格、界面那一栏 } }
+
+edges:
+  # 工作流
+  - { from: Workflow,   to: Step,       kind: HasSteps }
+  - { from: Step,       to: Criterion,  kind: HasCriteria }
+  # 工单
+  - { from: WorkOrder,  to: WorkRecord, kind: HasRecords }
+  - { from: WorkOrder,  to: Workflow,   kind: HasWorkflow }
+  - { from: WorkRecord, to: WorkOrder,  kind: HasOrder }
+  - { from: WorkRecord, to: Step,       kind: HasStep }
+  - { from: Order,      to: WorkOrder,  kind: HasWorkOrder }
+  - { from: Order,      to: Workflow,   kind: HasWorkflow }
+  # 产物
+  - { from: Artifact,   to: Criterion,  kind: HasSpec }
+  # 目录
+  - { from: Catalog,    to: Entry,      kind: HasEntries }
+
+axioms:
+  - id: ax-workorder-has-workflow
+    description: "一张工单必须引用一条工作流"
+    type: cardinality
+    target: WorkOrder
+    relation: HasWorkflow
+    constraint: "min: 1"
+  - id: ax-workflow-has-steps
+    description: "一条工作流必须有步骤"
+    type: cardinality
+    target: Workflow
+    relation: HasSteps
+    constraint: "min: 1"
+  - id: ax-record-has-step
+    description: "一笔工作记录必须指认所属步骤"
+    type: cardinality
+    target: WorkRecord
+    relation: HasStep
+    constraint: "min: 1"
+  - id: ax-record-has-order
+    description: "一笔工作记录必须指认所属工单"
+    type: cardinality
+    target: WorkRecord
+    relation: HasOrder
+    constraint: "min: 1"
