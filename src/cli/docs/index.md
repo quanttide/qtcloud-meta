@@ -11,10 +11,10 @@ qtcloud-meta CLI 是量潮元云的本地命令行入口，把[《三层极简�
 
 ## 现状
 
-`src/cli` 是 Rust 骨架：包 `qtcloud-meta-cli` v0.1.0，二进制 `qtcloud-meta`，运行仅输出一行名称。命令只设计了本体写入的 `change submit` 一个，尚未实现；范畴分析暂无命令设计。行为定义以主文档为准，用法与命令参考随实现补充。
+`src/cli` 是 Rust 骨架：包 `qtcloud-meta-cli` v0.1.0，二进制 `qtcloud-meta`，运行仅输出一行名称。当前没有任何命令设计——两版设计（七个命令、单个 `change submit`）都已删除，行为定义以主文档为准，接口何时重做见[API 参考](api-references/index.md)。
 
 ## 文档导航
 
 - [用户指南](user-guide/index.md)：安装、运行与两条流程的使用过程；
 - [开发指南](dev-guide/index.md)：工程结构、日常检查与文档同步约定；
-- [API 参考](api-references/index.md)：包与二进制的当前接口，以及命令的初步设计。
+- [API 参考](api-references/index.md)：包与二进制的当前接口、命令设计的现状与职责边界。
