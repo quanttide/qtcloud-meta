@@ -6,7 +6,7 @@
 
 `src/cli` 是 qtcloud-meta 仓库内的独立 Rust 工程，不提交构建产物：
 
-- `Cargo.toml`：包 `qtcloud-meta-cli`，版本 0.1.0，edition 2021，唯一二进制 `qtcloud-meta` 指向 `src/main.rs`；
+- `Cargo.toml`：包 `qtcloud-meta-cli`，版本 0.1.0，edition 2024，唯一二进制 `qtcloud-meta` 指向 `src/main.rs`；
 - `src/main.rs`：程序入口，当前只打印 `qtcloud-meta`；
 - `Cargo.lock`：锁定依赖版本，随 `Cargo.toml` 一并提交；
 - `.gitignore`：忽略 `/target`，构建产物不入库。
