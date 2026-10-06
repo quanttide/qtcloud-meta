@@ -1,0 +1,69 @@
+# examples/category/qtcloud-meta-cli-category.yaml —— 范畴「qtcloud-meta-cli-category」的本体定义
+#
+# 描述的是 qtcloud-meta 的 category 模块自己的结构（按最新结构整合：范畴内、范畴间与
+# 两者共用的报告骨架），类型作概念，类型之间的关系作边，报告必须具备的段落作公理。
+# schema 见 docs/dev-guide/category/within.md。
+name: QtcloudMetaCliCategory
+source: "src/cli/src/category/{within.rs, common.rs, between/unify.rs, between/common.rs} 的模块结构"
+version: "2.0"
+
+concepts:
+  # 输入：本体与三张表
+  - { name: OntologyDef,      label: { zh: 本体定义 } }
+  - { name: ConceptDef,       label: { zh: 概念定义 } }
+  - { name: EdgeDef,          label: { zh: 边定义 } }
+  - { name: AxiomDef,         label: { zh: 公理定义 } }
+  - { name: BetweenDef,       label: { zh: 范畴间定义 } }
+  - { name: MappingDef,       label: { zh: 映射行 } }
+  - { name: ConflictDef,      label: { zh: 冲突行 } }
+  # 报告：过程维度 + 结果维度（两个模块共用）
+  - { name: Report,           label: { zh: 报告 } }
+  - { name: Step,             label: { zh: 步骤行 } }
+  - { name: StepStatus,       label: { zh: 步骤状态 } }
+  - { name: Results,          label: { zh: 结果 } }
+  # 结果：范畴内的装载与分析
+  - { name: LoadedInfo,       label: { zh: 装载结果 } }
+  - { name: AnalyzedInfo,     label: { zh: 分析结果 } }
+  - { name: LawGroup,         label: { zh: 公理组 } }
+  # 公共出口
+  - { name: RelationInfo,     label: { zh: 关系行 } }
+  - { name: TranslationInfo,  label: { zh: 翻译行 } }
+
+edges:
+  # 输入表
+  - { from: OntologyDef,  to: ConceptDef,      kind: HasConcepts }
+  - { from: OntologyDef,  to: EdgeDef,         kind: HasEdges }
+  - { from: OntologyDef,  to: AxiomDef,        kind: HasAxioms }
+  - { from: BetweenDef,   to: MappingDef,      kind: HasMappings }
+  - { from: BetweenDef,   to: ConflictDef,     kind: HasConflicts }
+  # 报告的两个维度
+  - { from: Report,       to: Step,            kind: HasTrace }
+  - { from: Report,       to: Results,         kind: HasResults }
+  - { from: Step,         to: StepStatus,      kind: HasStatus }
+  # 结果：范畴内填装载与分析，范畴间填翻译
+  - { from: Results,      to: LoadedInfo,      kind: HasLoaded }
+  - { from: Results,      to: AnalyzedInfo,    kind: HasAnalyzed }
+  - { from: Results,      to: TranslationInfo, kind: HasTranslation }
+  - { from: AnalyzedInfo, to: LawGroup,        kind: HasLawGroup }
+  # 公共出口
+  - { from: Report,       to: RelationInfo,    kind: HasRelations }
+
+axioms:
+  - id: ax-report-has-trace
+    description: "报告必须有过程轨迹"
+    type: cardinality
+    target: Report
+    relation: HasTrace
+    constraint: "min: 1"
+  - id: ax-results-has-loaded
+    description: "结果必须有装载段（范畴内填）"
+    type: cardinality
+    target: Results
+    relation: HasLoaded
+    constraint: "min: 1"
+  - id: ax-results-has-analyzed
+    description: "结果必须有分析段（范畴内填）"
+    type: cardinality
+    target: Results
+    relation: HasAnalyzed
+    constraint: "min: 1"
