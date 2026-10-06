@@ -10,28 +10,42 @@ stage: clarifying
 
 `src/cli` 是 qtcloud-meta 仓库内的独立 Rust 工程，不提交构建产物：
 
-- `Cargo.toml`：包 `qtcloud-meta-cli`，版本 0.1.0，edition 2024，唯一二进制 `qtcloud-meta` 指向 `src/main.rs`；依赖 `clap`（参数解析）、`lau-category-theory` 0.1.0（范畴底座）、`serde` / `serde_json` / `serde_yml`（本体、映射表与报告的序列化）；
+- `Cargo.toml`：包 `qtcloud-meta-cli`，版本 0.1.0-alpha.1，edition 2024，唯一二进制 `qtcloud-meta` 指向 `src/main.rs`；依赖 `clap`（参数解析）、`lau-category-theory` 0.1.0（范畴底座）、`serde` / `serde_json` / `serde_yml`（本体、映射表与报告的序列化）；
 - `src/lib.rs`：库接口，只导出 `category` 一个模块；二进制与 `examples/` 共用这一层，参数解析与调用演示都不重写实现；
 - `src/main.rs`：参数解析。两个子命令：`category within <范畴>` 与 `category between <源范畴> <目标范畴>`；
 - `src/category/`：实现。`within.rs` 装载本体并跑数学校验，`between/` 走五步查表（`unify.rs` 融合型的语义、`common.rs` 步骤与报告骨架、`mod.rs` 入口），`common.rs` 放两个模块共用的报告结构与渲染；
 - `examples/`：示例数据与调用演示。`category/*.yaml` 是本体，`between/*.yaml` 是映射表（六个 yaml 由 `include_str!` 在编译期编进二进制，装完不依赖源码树），`category_within.rs` 与 `category_between.rs` 是两份调用示例；
 - `README.md`：包首页，`Cargo.toml` 的 `readme` 指向它；
+- `CHANGELOG.md`：发布版本记录，条目头写 `## [版本]`，发布预检查会按它校验；
+- `scripts/`：发布预检查脚本，`validate-version.sh` 对齐 tag 与 `Cargo.toml`，`validate-changelog.sh` 查版本条目；
 - `Cargo.lock`：锁定依赖版本，随 `Cargo.toml` 一并提交；
 - `.gitignore`：忽略 `/target`，构建产物不入库。
 
 ## 日常检查
 
-改动后本地跑通与 CI 相同的检查再提交。CI 配置在仓库根的 `.github/workflows/ci.yml`，push 与 PR 时把工作目录切到 `src/cli` 执行同样四步：
+改动后本地跑通发布门禁相同的检查再提交。门禁在仓库根的 `.github/workflows/release-cli.yml`，推 `cli/*` tag 时执行：
 
 ```bash
 cd src/cli
 cargo build --locked
 cargo test --locked
-cargo clippy --locked -- -D warnings
+cargo clippy --all-targets --locked -- -D warnings
 cargo fmt --check
 ```
 
-本仓测试目前为 0 条，四步里起作用的是编译、严格 lint 与格式检查：示例与二进制要能编过，clippy 的告警按 `-D warnings` 当错误处理。
+本仓测试 7 条：三份本体装载、未注册报错、成环本体回归（复合表那次 3GB）、报告四组无失败、between 走通与停机、映射表键。clippy 按 `-D warnings` 当错误处理。
+
+## 发布
+
+推 `cli/<版本>` 触发 `release-cli`，五个 job 依次跑：
+
+1. `check`：`scripts/validate-version.sh` 对齐 tag 与 `Cargo.toml` 的 `version`，`validate-changelog.sh` 查 `CHANGELOG.md` 里有没有 `## [版本]` 条目；
+2. `quality-gates`：fmt、test、clippy、`cargo publish --dry-run --locked`；
+3. `build-binaries`：Linux x86_64、macOS arm64、Windows x86_64 三平台 release 构建；
+4. `upload-release-assets`：三份二进制挂上 GitHub Release，`-alpha` / `-beta` / `-rc` 标预发布；
+5. `publish-crate`：推 crates.io（crate 名 `qtcloud-meta-cli`），已存在则跳过；token 用 Org 级的 `CRATES_API_TOKEN` / `CARGO_REGISTRY_TOKEN`。
+
+发布前要对齐三样：`Cargo.toml` 的 `version` 与 tag 一致、`CHANGELOG.md` 有对应条目、工作区干净。
 
 ## 本组文档的分工
 

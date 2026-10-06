@@ -1,6 +1,6 @@
 [package]
 name = "qtcloud-meta-cli"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2024"
 description = "量潮元数据命令行：把本体装进范畴做结构分析，出范畴内与范畴间两份报告"
 license = "CC-BY-4.0"
