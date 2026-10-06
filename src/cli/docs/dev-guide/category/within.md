@@ -359,3 +359,7 @@ P5 CLI 封装（within / between 子命令） —format / —out / —strict
 4. 函子校验的复用：Functor 的 check_identity_law 和 check_composition_law 方法针对函子映射设计，直接用于范畴自洽性校验时需要构造恒等函子作为桥接。
 
 这个方案的核心思路是：YAML 定义本体 → serde 解析 → lau-category-theory 构造范畴 → 分析引擎（公理/复合/派生）→ 报告渲染（Markdown/JSON）→ CLI 封装。整个流程与之前 within 命令的设计保持一致，只是将底层的 pr4xis 替换为 lau-category-theory。
+
+---
+
+本工具自身的建模（为什么输入模型长这样、它怎么自证）见[元本体](meta-ontology.md)。
