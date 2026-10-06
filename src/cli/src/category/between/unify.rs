@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use super::super::common::{Report, Results};
 use super::common::{Narration, drive, load_table};
-pub use super::common::{Options, mapping_path};
+pub use super::common::{Options, mapping_key};
 
 // ───────────────────────── YAML 映射/冲突 schema ─────────────────────────
 
@@ -66,7 +66,7 @@ pub struct TranslationInfo {
 
 /// 读映射表。文件不存在视为「没有映射规则」，返回 `None`，不是错误。
 pub fn load_mapping(from: &str, to: &str) -> Result<Option<BetweenDef>, String> {
-    load_table(&mapping_path(from, to), "映射")
+    load_table(&mapping_key(from, to), "映射")
 }
 
 // ───────────────────────── 五步 ─────────────────────────
@@ -169,4 +169,52 @@ pub fn run(from: &str, to: &str, options: &Options) -> Result<(), String> {
         let table = load_mapping(from, to)?;
         Ok(build_report(from_name, to_name, commitment, table.as_ref()))
     })
+}
+
+// ───────────────────────── 测试 ─────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::category::common::StepStatus;
+
+    /// 有表的走向走通到第 5 步，翻译条数与表里的规则数一致。
+    #[test]
+    fn 有表的走向走通五步() {
+        let table = load_mapping("qtcloud-code-cli", "qtcloud-work-cli").unwrap();
+        let table = table.as_ref().expect("这条走向配了映射表");
+        let report = build_report("QtcloudCodeCli", "QtcloudWorkCli", "承诺", Some(table));
+
+        assert!(report.pending.is_none());
+        assert_eq!(report.trace.len(), 5);
+        assert_eq!(report.trace[3].status, StepStatus::Skipped);
+        let translation = report
+            .results
+            .translation
+            .as_ref()
+            .expect("走通了就该有翻译清单");
+        assert_eq!(translation.len(), table.mappings.len());
+        assert_eq!(report.conclusion.len(), table.mappings.len());
+    }
+
+    /// 反向没有表：停在第 4 步并挂起 change_request，返回值不算失败。
+    #[test]
+    fn 没有表的走向停在第四步() {
+        let table = load_mapping("qtcloud-work-cli", "qtcloud-code-cli").unwrap();
+        assert!(table.is_none());
+
+        let report = build_report("QtcloudWorkCli", "QtcloudCodeCli", "承诺", table.as_ref());
+        assert_eq!(
+            report.pending.as_deref(),
+            Some("cr-map-QtcloudWorkCli-QtcloudCodeCli")
+        );
+        assert_eq!(report.trace[3].status, StepStatus::Pending);
+        assert!(report.results.translation.is_none());
+    }
+
+    /// 表的键由源与目标拼出，没有第三处地方决定哪一对范畴。
+    #[test]
+    fn 键是源与目标拼起来的() {
+        assert_eq!(mapping_key("a", "b"), "a--b");
+    }
 }

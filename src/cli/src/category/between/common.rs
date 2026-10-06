@@ -9,43 +9,57 @@
 //! 停在原地等人填——这是停机位，不是错误。
 
 use serde::de::DeserializeOwned;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use super::super::common::{Report, Results, Step, StepStatus, render_json, render_markdown};
 use super::super::within::{self, OntologyDef};
 
 // ───────────────────────── 表从哪读 ─────────────────────────
 
-/// 范畴间映射文件路径：`examples/between/<源>--<目标>.yaml`。
+/// 装进二进制的映射表：`<源>--<目标>` → `examples/between/<源>--<目标>.yaml` 的内容。
 ///
-/// 映射表是示例数据，归 `examples/`；`src/` 下只放实现。
-pub fn mapping_path(from: &str, to: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples")
-        .join("between")
-        .join(format!("{from}--{to}.yaml"))
+/// 与本体表同理：`CARGO_MANIFEST_DIR` 是构建期的源码目录，装完的二进制去找不到它。
+const MAPPINGS: &[(&str, &str)] = &[
+    (
+        "qtcloud-code-cli--qtcloud-work-cli",
+        include_str!("../../../examples/between/qtcloud-code-cli--qtcloud-work-cli.yaml"),
+    ),
+    (
+        "qtcloud-work-cli--qtcloud-meta-cli-category",
+        include_str!("../../../examples/between/qtcloud-work-cli--qtcloud-meta-cli-category.yaml"),
+    ),
+    (
+        "qtcloud-meta-cli-category--qtcloud-code-cli",
+        include_str!("../../../examples/between/qtcloud-meta-cli-category--qtcloud-code-cli.yaml"),
+    ),
+];
+
+/// 映射表的键：`<源>--<目标>`，哪一对范畴由键决定，表里不写。
+pub fn mapping_key(from: &str, to: &str) -> String {
+    format!("{from}--{to}")
 }
 
-/// 读一张 YAML 表。文件不存在视为「没有规则」，返回 `None`，不是错误。
+/// 取一张 YAML 表。键不在表里视为「没有规则」，返回 `None`，不是错误。
 ///
 /// `label` 只用于报错措辞（映射表、函子表……），读取机制各操作共用。
 pub fn load_table<T: DeserializeOwned + 'static>(
-    path: &Path,
+    key: &str,
     label: &str,
 ) -> Result<Option<T>, String> {
-    if !path.exists() {
+    let Some(text) = MAPPINGS
+        .iter()
+        .find(|(k, _)| *k == key)
+        .map(|(_, text)| text)
+    else {
         return Ok(None);
-    }
-    let text = std::fs::read_to_string(path)
-        .map_err(|e| format!("读不到{label}文件 {}：{e}", path.display()))?;
-    let table: T = serde_yml::from_str(&text)
-        .map_err(|e| format!("{label}文件 {} 解析失败：{e}", path.display()))?;
+    };
+    let table: T = serde_yml::from_str(text).map_err(|e| format!("{label}表解析失败：{e}"))?;
     Ok(Some(table))
 }
 
-/// 按范畴标识装载本体。文件不存在返回 `Ok(None)`——范畴未注册。
+/// 按范畴标识装载本体。表里没有返回 `Ok(None)`——范畴未注册。
 pub fn registered(category: &str) -> Result<Option<OntologyDef>, String> {
-    if !within::ontology_path(category).exists() {
+    if !within::has_ontology(category) {
         return Ok(None);
     }
     within::load_ontology(category).map(Some)
