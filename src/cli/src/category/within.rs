@@ -9,7 +9,7 @@
 
 use lau_category_theory::category::{FiniteCategory, Morphism, Obj};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use super::common::{Report, Results, Step, StepStatus, render_json, render_markdown};
@@ -219,28 +219,95 @@ pub fn build_category(onto: &OntologyDef) -> FiniteCategory {
     }
 
     // 复合表：f ∘ g，其中 f 是新关系（外），g 是既有关系（内），f.dom == g.cod。
+    //
+    // 两处要点，都为了过 lau 的 `check_associativity`：
+    //
+    // 1. 要建到闭包，不是只把声明态射两两接起来。库的检查对每个三元组 (f, g, h) 会去复合
+    //    合成结果——`compose(f∘g, h)` 与 `compose(f, g∘h)` 都查表——所以「合成结果 ∘ 声明态射」
+    //    也要有表项。只建一层时，任何长度 3 的链都会让 left 查成 None 而判失败。
+    // 2. 合成结果的名字要由**路径本身**决定，与括号无关。库按名字判等，
+    //    用「(f∘g)」这种带括号的名字，两侧名字永远不同。这里取路径上的关系种类序列加端点：
+    //    同一个路径，怎么打括号都是同一个名字。
     let declared: Vec<Morphism> = cat
         .morphisms
         .iter()
         .filter(|m| !is_identity(m))
         .cloned()
         .collect();
-    let mut pairs: Vec<(Morphism, Morphism, Morphism)> = Vec::new();
-    for f in &declared {
-        for g in &declared {
-            if f.dom != g.cod {
-                continue;
-            }
-            let composed = Morphism::new(
-                format!("({}∘{})", f.name, g.name),
-                g.dom.clone(),
-                f.cod.clone(),
-            );
-            pairs.push((f.clone(), g.clone(), composed));
-        }
+
+    /// 复合表里的一条：名字由路径决定，`kinds` 按 dom→cod 顺序记路径上的关系种类。
+    struct Composite {
+        name: String,
+        dom: Obj,
+        cod: Obj,
+        kinds: Vec<String>,
     }
-    for (f, g, composed) in &pairs {
-        cat.set_composition(f, g, composed);
+    let composite_name = |kinds: &[String], dom: &Obj, cod: &Obj| {
+        let display: Vec<String> = kinds.iter().rev().cloned().collect();
+        format!("{}#{}->{}", display.join("∘"), dom.0, cod.0)
+    };
+
+    // 已记过的 (外, 内) 组合，避免同一对反复写表、也避免死循环。
+    let mut recorded: HashSet<(String, String)> = HashSet::new();
+    let mut known: Vec<Composite> = declared
+        .iter()
+        .map(|m| Composite {
+            name: m.name.clone(),
+            dom: m.dom.clone(),
+            cod: m.cod.clone(),
+            kinds: vec![kind_of(m)],
+        })
+        .collect();
+
+    // 一轮把每条已知的接法再往前接一条边；路径长度每轮加一，上限取声明态射数即可覆盖所有简单路径。
+    // （有环时路径可无限长，靠这个轮数上限收敛。）
+    for _ in 0..=declared.len() {
+        let snapshot: Vec<(String, Obj, Obj, Vec<String>)> = known
+            .iter()
+            .map(|c| {
+                (
+                    c.name.clone(),
+                    c.dom.clone(),
+                    c.cod.clone(),
+                    c.kinds.clone(),
+                )
+            })
+            .collect();
+        let mut added = false;
+        for (outer_name, outer_dom, outer_cod, outer_kinds) in &snapshot {
+            for (inner_name, inner_dom, inner_cod, inner_kinds) in &snapshot {
+                if outer_dom != inner_cod {
+                    continue;
+                }
+                // 路径按 dom→cod 排：内段在前、外段在后。
+                let mut kinds = inner_kinds.clone();
+                kinds.extend(outer_kinds.iter().cloned());
+                // 去重要按 (外, 内) 这一对，不能按合成结果的名字——
+                // 同一条路径的左右两种括号算出的名字本来就相同，按名字去重会把另一侧的表项漏掉，
+                // 库查 `compose(f∘g, h)` 时就成了 None。
+                if !recorded.insert((outer_name.clone(), inner_name.clone())) {
+                    continue;
+                }
+                let name = composite_name(&kinds, inner_dom, outer_cod);
+                let outer = Morphism::new(outer_name.clone(), outer_dom.clone(), outer_cod.clone());
+                let inner = Morphism::new(inner_name.clone(), inner_dom.clone(), inner_cod.clone());
+                let composed = Morphism::new(name.clone(), inner_dom.clone(), outer_cod.clone());
+                cat.set_composition(&outer, &inner, &composed);
+                // 名字已在 known 里就不必再放（同一路径的另一侧括号已经放过了），但要继续迭代。
+                if !known.iter().any(|c| c.name == name) {
+                    known.push(Composite {
+                        name,
+                        dom: inner_dom.clone(),
+                        cod: outer_cod.clone(),
+                        kinds,
+                    });
+                    added = true;
+                }
+            }
+        }
+        if !added {
+            break;
+        }
     }
 
     cat
