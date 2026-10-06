@@ -1,0 +1,8 @@
+[package]
+name = "qtcloud-meta-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "qtcloud-meta"
+path = "src/main.rs"
