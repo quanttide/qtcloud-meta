@@ -6,3 +6,7 @@ edition = "2024"
 [[bin]]
 name = "qtcloud-meta"
 path = "src/main.rs"
+
+[dev-dependencies]
+# 版本锁 0.29.1，引入结论与许可证待办见 data/report/decision/pr4xis.md
+pr4xis = "0.29.1"
