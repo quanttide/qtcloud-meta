@@ -1,3 +1,7 @@
+---
+stage: clarifying
+---
+
 # 用户指南
 
 本文讲 qtcloud-meta CLI 的日常使用：怎么构建、怎么跑，以及两条流程各自在系统里的位置。命令与接口见 [API 参考](../api-references/index.md)，流程的行为定义见主文档的[用户指南](../../../../docs/user-guide/index.md)。

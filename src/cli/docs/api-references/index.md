@@ -1,3 +1,7 @@
+---
+stage: clarifying
+---
+
 # API 参考
 
 本页给两样东西：已实现的接口，以及命令设计的现状。怎么用看[用户指南](../user-guide/index.md)，工程结构看[开发指南](../dev-guide/index.md)，流程定义见主文档[用户指南](../../../../docs/user-guide/index.md)。

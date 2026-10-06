@@ -1,3 +1,7 @@
+---
+stage: clarifying
+---
+
 # 范畴的使用过程
 
 本体及关系录入系统之后，范畴的性质分析遵循一定的规则，不是 LLM 猜测。规则具体有哪些尚未定义，本页不代拟：范畴三表（`category`、`category_mapping`、`conflict`）的结构见主文档[开发指南](../../../../docs/dev-guide/index.md)，流程的全局结构见[用户指南](index.md)。
