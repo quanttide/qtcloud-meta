@@ -1,0 +1,25 @@
+# examples/between/qtcloud-meta-cli-category--qtcloud-code-cli.yaml
+#
+# 走向：qtcloud-meta-cli-category（本工具 category 模块的模型）→ qtcloud-code-cli（代码静态分析与质量检测）。
+# 元工具这边交出去的东西落到编程云这一侧：本体是对契约的规约、公理是检测规则、
+# 报告是一次对齐审计的结果。
+#
+# 口径：只写真心对得上的；对不上的留白，不硬凑（留白项列在文件末）。
+# 字段：mappings[].from = 源范畴的概念，.to = 目标范畴的概念；conflicts 是既往裁决，本走向为空。
+
+mappings:
+  # 本体 → 契约：本体约束一份模型该有什么，契约约束一份代码该有什么
+  - { from: OntologyDef, to: ContractConfig }
+  # 公理 → 检测规则：两边都是「必须成立的规则」
+  - { from: AxiomDef,    to: CodeConfig }
+  # 报告 → 审计结果：元工具出的报告，到编程云就是一次对齐审计的结果
+  - { from: Report,      to: AlignResult }
+
+conflicts: []
+
+# 留白（这些概念在对面没有对口的概念，不硬凑）：
+#   qtcloud-meta-cli-category：ConceptDef、EdgeDef、BetweenDef、MappingDef、ConflictDef、Step、
+#     StepStatus、Results、LoadedInfo、AnalyzedInfo、LawGroup、RelationInfo、TranslationInfo
+#   qtcloud-code-cli：AuditConfig、AlignIssue、ApiSignature、TestRef、CodeFinding、CodeSeverity、
+#     CodeEnrichedFinding、LlmInfo、CodeEvidence、CodeEvidenceChain、CodeSymbolTable、CodeSymbol、
+#     CodeSymbolKind、CodeRefLocation

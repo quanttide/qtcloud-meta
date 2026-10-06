@@ -1,11 +1,11 @@
-# examples/category/qtcloud-work-cli-category.yaml —— 范畴「qtcloud-work-cli-category」的本体定义
+# examples/category/qtcloud-work-cli.yaml —— 范畴「qtcloud-work-cli」的本体定义
 #
 # 描述的是 qtcloud-work CLI（量潮工作云：工作流 / 工单 / 判据）的领域模型：
 # 工作流定义干什么、工单记这一趟怎么走、判据判算不算完。
 # 类型作概念，类型之间的包含/指认关系作边，领域里必须成立的规则作公理。
 # schema 见 docs/dev-guide/category/within.md。
 # 只读提炼自仓库外 qtcloud-work/src/cli，未改动其任何文件。
-name: QtcloudWorkCliCategory
+name: QtcloudWorkCli
 source: "/home/iguo/repos/quanttide/domains/quanttide-work/apps/qtcloud-work/src/cli：README.md，src/{workspace/model.rs, workflow/model.rs, workflow/read.rs, criterion/model.rs, order/model.rs, order/record.rs, order/mod.rs, artifact/model.rs, artifact/mod.rs, material/mod.rs, catalog/mod.rs, outcome.rs} 的领域模型"
 version: "1.0"
 

@@ -1,0 +1,23 @@
+# examples/between/qtcloud-work-cli--qtcloud-meta-cli-category.yaml
+#
+# 走向：qtcloud-work-cli（工作流 / 工单 / 判据）→ qtcloud-meta-cli-category（本工具 category 模块的模型）。
+# 工作云这一侧的「判据、步骤、答复」，到了元工具这一侧是「公理、步骤行、报告」——
+# 元工具分析一份工作流本体时，认的就是这几样。
+#
+# 口径：只写真心对得上的；对不上的留白，不硬凑（留白项列在文件末）。
+# 字段：mappings[].from = 源范畴的概念，.to = 目标范畴的概念；conflicts 是既往裁决，本走向为空。
+
+mappings:
+  # 判据 → 公理：判据是这条流程里必须成立的规则，公理是本体里声明的规则
+  - { from: Criterion, to: AxiomDef }
+  # 步骤 → 步骤行：两边名字一样，指的是同一样东西——报告轨迹里的一步
+  - { from: Step,      to: Step }
+  # 答复 → 报告：一次动作的答复，到了元工具这一侧就是交出去的那份报告
+  - { from: Outcome,   to: Report }
+
+conflicts: []
+
+# 留白（这些概念在对面没有对口的概念，不硬凑）：
+#   qtcloud-work-cli：Workspace、Workflow、WorkOrder、WorkRecord、Order、Artifact、Asset、Material、Catalog、Entry
+#   qtcloud-meta-cli-category：OntologyDef、ConceptDef、EdgeDef、BetweenDef、MappingDef、ConflictDef、
+#     StepStatus、Results、LoadedInfo、AnalyzedInfo、LawGroup、RelationInfo、TranslationInfo

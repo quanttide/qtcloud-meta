@@ -1,11 +1,11 @@
-# examples/category/qtcloud-code-cli-category.yaml —— 范畴「qtcloud-code-cli-category」的本体定义
+# examples/category/qtcloud-code-cli.yaml —— 范畴「qtcloud-code-cli」的本体定义
 #
 # 描述的是 qtcloud-code CLI（多语言代码静态分析与质量检测）的领域模型：
 # 约束（契约）→ AI 生成 → audit + review 校验，reflect 供证据、refactor 做变换。
 # 类型作概念，类型之间的包含/引用关系作边，领域里必须成立的规则作公理。
 # schema 见 docs/dev-guide/category/within.md。
 # 只读提炼自仓库外 qtcloud-code/src/cli，未改动其任何文件。
-name: QtcloudCodeCliCategory
+name: QtcloudCodeCli
 source: "/home/iguo/repos/quanttide/domains/quanttide-code/apps/qtcloud-code/src/cli：README.md 与 docs/dev-guide/index.md，src/{config.rs, contract.rs, audit.rs, detector/mod.rs, review.rs, llm.rs, evidence.rs, reflect/mod.rs, refactor/rename.rs} 的领域模型"
 version: "1.0"
 

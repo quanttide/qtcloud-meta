@@ -14,9 +14,15 @@ stage: clarifying
 
 范畴内分析回答「一个范畴自己立不立得住」。范畴间分析回答另一个问题：从一个范畴走到另一个范畴，怎么走、走到哪、走不通时怎么办。
 
-比如你有一批按「实体导向」组织的内容资产，想放到「流程导向」的范畴里用。中间要翻译、要查有没有冲突、要定结论——这一页就是讲这个过程的。
+比如 qtcloud-code-cli 里一次代码审计，要落进 qtcloud-work-cli 的账本里用。中间要翻译、要查有没有冲突、要定结论——这一页就是讲这个过程的。
 
-对应命令：between。
+对应命令：between。现在配好的是三个子系统之间的三条走向，首尾相接成一个圈：
+
+· qtcloud-code-cli → qtcloud-work-cli
+· qtcloud-work-cli → qtcloud-meta-cli-category
+· qtcloud-meta-cli-category → qtcloud-code-cli
+
+反向走向没有映射表，跑起来会停在第 4 步。
 
 什么时候用
 
@@ -73,25 +79,25 @@ stage: clarifying
 
 报告长什么样
 
-走通的情况：
+走通的情况（qtcloud-code-cli → qtcloud-work-cli）：
 
 ```
-# 范畴间报告：实体导向 → 流程导向
-- 1 选定范畴：实体导向，本体承诺 实体、属性、关系
-- 2 映射翻译：查到 2 条规则
+# 范畴间报告：QtcloudCodeCli → QtcloudWorkCli
+- 1 选定范畴：QtcloudCodeCli，本体承诺 ContractConfig、CodeConfig、AuditConfig、AlignResult、AlignIssue、ApiSignature、TestRef、CodeFinding、CodeSeverity、CodeEnrichedFinding、LlmInfo、CodeEvidence、CodeEvidenceChain、CodeSymbolTable、CodeSymbol、CodeSymbolKind、CodeRefLocation
+- 2 映射翻译：查到 6 条规则
 - 3 冲突检查：无 true_conflict 记录，按主文档继续
-- 5 输出结论：2 条断言翻到「流程导向」
-- 结论：内容 → 发布活动；素材 → 活动资源
+- 5 输出结论：6 条断言翻到「QtcloudWorkCli」
+- 结论：ContractConfig → Artifact；CodeConfig → Criterion；AlignResult → Outcome；CodeEvidence → WorkRecord；CodeSymbolTable → Catalog；CodeSymbol → Entry
 ```
 
-走不通的情况（映射表为空）：
+走不通的情况（反向没有映射表）：
 
 ```
-# 范畴间报告：实体导向 → 流程导向
-- 1 选定范畴：实体导向，本体承诺 实体、属性、关系
-- 2 映射翻译：实体导向 → 流程导向 没有映射规则
-- 4 规则缺失：生成 change_request cr-map-实体导向-流程导向，分析暂停在当前范畴
-- 挂起：cr-map-实体导向-流程导向 等人类定义规则
+# 范畴间报告：QtcloudWorkCli → QtcloudCodeCli
+- 1 选定范畴：QtcloudWorkCli，本体承诺 Workspace、Workflow、Step、Criterion、WorkOrder、WorkRecord、Order、Artifact、Asset、Material、Catalog、Entry、Outcome
+- 2 映射翻译：QtcloudWorkCli → QtcloudCodeCli 没有映射规则
+- 4 规则缺失：生成 change_request cr-map-QtcloudWorkCli-QtcloudCodeCli，分析暂停在当前范畴
+- 挂起：cr-map-QtcloudWorkCli-QtcloudCodeCli 等人类定义规则
 ```
 
 怎么读这份报告

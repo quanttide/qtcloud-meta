@@ -1,0 +1,29 @@
+# examples/between/qtcloud-code-cli--qtcloud-work-cli.yaml
+#
+# 走向：qtcloud-code-cli（代码静态分析与质量检测）→ qtcloud-work-cli（工作流 / 工单 / 判据）。
+# 一次代码审计落进工作云的账本：契约是产物的规格、检测规则是判据、审计结果是这次动作的答复、
+# 证据与符号索引进工作记录与目录。
+#
+# 口径：只写真心对得上的；对不上的留白，不硬凑（留白项列在文件末）。
+# 字段：mappings[].from = 源范畴的概念，.to = 目标范畴的概念；conflicts 是既往裁决，本走向为空。
+
+mappings:
+  # 规格 → 产物：契约规定一份代码该长什么样，产物也是「名字 + 规格」
+  - { from: ContractConfig,  to: Artifact }
+  # 规则 → 判据：检测规则（rules / exclude）就是「怎么算不合格」的判据
+  - { from: CodeConfig,      to: Criterion }
+  # 结果 → 答复：一次对齐审计的结果，就是这次动作的答复
+  - { from: AlignResult,     to: Outcome }
+  # 证据 → 记录：证据信封是「这笔活干过」的凭据，工作记录是流水里只增不改的一笔
+  - { from: CodeEvidence,    to: WorkRecord }
+  # 索引 → 目录：两边都是「名字 → 位置」的一份快照
+  - { from: CodeSymbolTable, to: Catalog }
+  # 索引里的一条 → 目录里的一条
+  - { from: CodeSymbol,      to: Entry }
+
+conflicts: []
+
+# 留白（这些概念在对面没有对口的概念，不硬凑）：
+#   qtcloud-code-cli：AuditConfig、AlignIssue、ApiSignature、TestRef、CodeFinding、CodeSeverity、
+#     CodeEnrichedFinding、LlmInfo、CodeEvidenceChain、CodeSymbolKind、CodeRefLocation
+#   qtcloud-work-cli：Workspace、Workflow、Step、WorkOrder、Order、Asset、Material

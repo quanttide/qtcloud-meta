@@ -7,13 +7,13 @@
 //! 见 `src/category/common.rs`；Markdown 与 JSON 两个出口共用同一份报告数据。
 //!
 //! 对应文档：`docs/user-guide/category/within.md`（报告要说清什么）、
-//! `docs/dev-guide/category/within.md`（实现方案）。
+//! `docs/dev-guide/category/within.md`（实现）。
 //!
 //! 跑法：
 //!
 //! ```text
 //! cargo run --example category_within                     # 打印 Markdown 报告
-//! cargo run -- --category within qtcloud-meta-cli-category # 命令行接口，可加 --format json / --out / --strict
+//! cargo run -- category within qtcloud-meta-cli-category   # 命令行接口，可加 --format json / --out / --strict
 //! ```
 
 use qtcloud_meta_cli::category::within::{self, Options};
