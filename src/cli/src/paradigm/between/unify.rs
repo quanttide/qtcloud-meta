@@ -1,6 +1,6 @@
-//! 范畴间·融合型：五步走 —— 对应 `docs/user-guide/category/between.md`。
+//! 范式间·融合型：五步走 —— 对应 `docs/user-guide/paradigm/between.md`。
 //!
-//! 流程：选定范畴 → 映射翻译 → 冲突检查 → 规则缺失 → 输出结论。
+//! 流程：选定范式 → 映射翻译 → 冲突检查 → 规则缺失 → 输出结论。
 //! 只查表（本体、映射表、冲突表），表里没有的规则不代拟；缺规则时生成
 //! change_request，停在原地等人填——这是停机位，不是错误。
 //!
@@ -17,9 +17,9 @@ pub use super::common::{Options, mapping_key};
 
 // ───────────────────────── YAML 映射/冲突 schema ─────────────────────────
 
-/// 范畴间映射文件，对应 `examples/between/<源>--<目标>.yaml`。
+/// 范式间映射文件，对应 `examples/between/<源>--<目标>.yaml`。
 ///
-/// 文件只放两张表：映射表与冲突表；哪一对范畴由文件名决定。
+/// 文件只放两张表：映射表与冲突表；哪一对范式由文件名决定。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BetweenDef {
     #[serde(default)]
@@ -72,11 +72,14 @@ pub fn load_mapping(from: &str, to: &str) -> Result<Option<BetweenDef>, String> 
 // ───────────────────────── 五步 ─────────────────────────
 
 /// 走上五步，装配报告。缺规则时停在第 4 步并挂起，不返回错误。
+///
+/// `fill_hint` 是缺规则时写给填表人的提示（补哪个文件、怎么接上）。
 pub fn build_report(
     from_name: &str,
     to_name: &str,
     commitment: &str,
     table: Option<&BetweenDef>,
+    fill_hint: String,
 ) -> Report {
     let mappings: &[MappingDef] = table.map(|t| t.mappings.as_slice()).unwrap_or(&[]);
 
@@ -98,6 +101,7 @@ pub fn build_report(
             Narration {
                 mapping: detail.clone(),
                 missing: Some(detail),
+                fill_hint: Some(fill_hint),
                 conflict: String::new(),
                 conclusion_note: String::new(),
                 conclusion: Vec::new(),
@@ -147,6 +151,7 @@ pub fn build_report(
         Narration {
             mapping: format!("查到 {} 条规则", mappings.len()),
             missing: None,
+            fill_hint: None,
             conflict: conflict_note,
             conclusion_note: format!("{} 条断言翻到「{to_name}」", translation.len()),
             conclusion,
@@ -161,13 +166,20 @@ pub fn build_report(
 
 // ───────────────────────── CLI 入口 ─────────────────────────
 
-/// 执行 `category between`：选定 → 映射 → 冲突 → 缺失 → 结论。
+/// 执行 `paradigm between`：选定 → 映射 → 冲突 → 缺失 → 结论。
 ///
-/// 未注册范畴写「未注册，停」并以错误退出；规则缺失是停机位，返回 `Ok(())`。
+/// 未注册范式写「未注册，停」并以错误退出；规则缺失是停机位，返回 `Ok(())`。
 pub fn run(from: &str, to: &str, options: &Options) -> Result<(), String> {
     drive(from, to, options, |from_name, to_name, commitment| {
         let table = load_mapping(from, to)?;
-        Ok(build_report(from_name, to_name, commitment, table.as_ref()))
+        let hint = super::common::fill_hint_for(&mapping_key(from, to));
+        Ok(build_report(
+            from_name,
+            to_name,
+            commitment,
+            table.as_ref(),
+            hint,
+        ))
     })
 }
 
@@ -176,14 +188,20 @@ pub fn run(from: &str, to: &str, options: &Options) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::category::common::StepStatus;
+    use crate::paradigm::common::StepStatus;
 
     /// 有表的走向走通到第 5 步，翻译条数与表里的规则数一致。
     #[test]
     fn 有表的走向走通五步() {
         let table = load_mapping("qtcloud-code-cli", "qtcloud-work-cli").unwrap();
         let table = table.as_ref().expect("这条走向配了映射表");
-        let report = build_report("QtcloudCodeCli", "QtcloudWorkCli", "承诺", Some(table));
+        let report = build_report(
+            "QtcloudCodeCli",
+            "QtcloudWorkCli",
+            "承诺",
+            Some(table),
+            "测试".to_string(),
+        );
 
         assert!(report.pending.is_none());
         assert_eq!(report.trace.len(), 5);
@@ -203,7 +221,13 @@ mod tests {
         let table = load_mapping("qtcloud-work-cli", "qtcloud-code-cli").unwrap();
         assert!(table.is_none());
 
-        let report = build_report("QtcloudWorkCli", "QtcloudCodeCli", "承诺", table.as_ref());
+        let report = build_report(
+            "QtcloudWorkCli",
+            "QtcloudCodeCli",
+            "承诺",
+            table.as_ref(),
+            "测试".to_string(),
+        );
         assert_eq!(
             report.pending.as_deref(),
             Some("cr-map-QtcloudWorkCli-QtcloudCodeCli")
@@ -212,7 +236,7 @@ mod tests {
         assert!(report.results.translation.is_none());
     }
 
-    /// 表的键由源与目标拼出，没有第三处地方决定哪一对范畴。
+    /// 表的键由源与目标拼出，没有第三处地方决定哪一对范式。
     #[test]
     fn 键是源与目标拼起来的() {
         assert_eq!(mapping_key("a", "b"), "a--b");

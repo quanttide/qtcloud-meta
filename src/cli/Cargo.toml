@@ -1,8 +1,8 @@
 [package]
 name = "qtcloud-meta-cli"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2024"
-description = "量潮元数据命令行：把本体装进范畴做结构分析，出范畴内与范畴间两份报告"
+description = "量潮元数据命令行：把本体装进范式做结构分析，出范式内与范式间两份报告"
 license = "CC-BY-4.0"
 repository = "https://github.com/quanttide/qtcloud-meta"
 homepage = "https://github.com/quanttide/qtcloud-meta"
@@ -14,7 +14,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-# 范畴论底座，替换 pr4xis（CC-BY-NC-SA-4.0，禁商用）
+# 范式论底座，替换 pr4xis（CC-BY-NC-SA-4.0，禁商用）
 lau-category-theory = "0.1.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -1,7 +1,7 @@
-//! qtcloud-meta CLI 入口。参数解析在这一层，范畴分析的实现在库里。
+//! qtcloud-meta CLI 入口。参数解析在这一层，范式分析的实现在库里。
 
 use clap::{Parser, Subcommand};
-use qtcloud_meta_cli::category::{between, within};
+use qtcloud_meta_cli::paradigm::{between, within};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -13,19 +13,19 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// 范畴分析
-    Category {
+    /// 范式分析
+    Paradigm {
         #[command(subcommand)]
-        sub: CategoryCommands,
+        sub: ParadigmCommands,
     },
 }
 
 #[derive(Subcommand)]
-enum CategoryCommands {
-    /// 范畴内分析：装载 → 分析 → 返回
+enum ParadigmCommands {
+    /// 范式内分析：装载 → 分析 → 返回
     Within {
-        /// 范畴标识符
-        category: String,
+        /// 范式标识符
+        paradigm: String,
         /// 输出格式：md 或 json
         #[arg(long, default_value = "md")]
         format: String,
@@ -36,11 +36,11 @@ enum CategoryCommands {
         #[arg(long)]
         strict: bool,
     },
-    /// 范畴间分析：选定 → 映射 → 冲突 → 缺失 → 结论
+    /// 范式间分析：选定 → 映射 → 冲突 → 缺失 → 结论
     Between {
-        /// 源范畴标识符
+        /// 源范式标识符
         from: String,
-        /// 目标范畴标识符
+        /// 目标范式标识符
         to: String,
         /// 输出格式：md 或 json
         #[arg(long, default_value = "md")]
@@ -54,9 +54,9 @@ enum CategoryCommands {
 fn main() -> std::process::ExitCode {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Category { sub } => match sub {
-            CategoryCommands::Within {
-                category,
+        Commands::Paradigm { sub } => match sub {
+            ParadigmCommands::Within {
+                paradigm,
                 format,
                 out,
                 strict,
@@ -66,9 +66,9 @@ fn main() -> std::process::ExitCode {
                     out,
                     strict,
                 };
-                finish(within::run(&category, &options))
+                finish(within::run(&paradigm, &options))
             }
-            CategoryCommands::Between {
+            ParadigmCommands::Between {
                 from,
                 to,
                 format,

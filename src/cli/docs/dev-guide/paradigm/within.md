@@ -2,13 +2,13 @@
 stage: clarifying
 ---
 
-# 范畴内：实现
+# 范式内：实现
 
-对应 `src/category/within.rs`，入口 `within::run(范畴, &Options)`。流程是：YAML 本体 → serde 解析 → `lau-category-theory` 构造范畴 → 四组检查 → 装配报告 → md / json 两个出口（共用同一份数据）。
+对应 `src/paradigm/within.rs`，入口 `within::run(范式, &Options)`。流程是：YAML 本体 → serde 解析 → `lau-category-theory` 构造范式 → 四组检查 → 装配报告 → md / json 两个出口（共用同一份数据）。
 
 ## 本体 schema
 
-本体文件在 `examples/category/<范畴>.yaml`，数据与实现分放：`examples/` 只放示例数据，`src/` 只放实现。字段如下：
+本体文件在 `examples/paradigm/<范式>.yaml`，数据与实现分放：`examples/` 只放示例数据，`src/` 只放实现。字段如下：
 
 ```yaml
 name: QtcloudMetaCliCategory        # 必填，进报告标题
@@ -36,9 +36,9 @@ axioms:                             # 可选，领域公理
 
 ## 装载
 
-三份本体在编译期由 `include_str!` 读进二进制：源文件仍是 `examples/category/<标识>.yaml`，`has_ontology` 判注册、`load_ontology` 取文本解析。范畴不在表里就是错误，范畴内没有停机位。之所以编译期读，是因为 `CARGO_MANIFEST_DIR` 指向构建期的源码目录——从 crates.io 装下来的二进制没有那个目录，也没有那份文件。读进来之后 `validate_ontology` 只查一件事：每条边的两端都必须在 `concepts` 里，缺一端就报错，不代补。
+三份本体的正本在 `examples/paradigm/<标识>.yaml`，装载文件优先：从当前目录向上找该文件（`find_table_file`，最多八级），找到读文件并把路径写进报告的装载步；找不到才回落到编译期 `include_str!` 的快照，报告注明「内置快照」。之所以还留快照，是因为 `CARGO_MANIFEST_DIR` 指向构建期的源码目录——从 crates.io 装下来的二进制在任意目录运行时可能找不到表目录，快照保底。`has_ontology` 判注册（内置表有，或文件存在），`load_ontology` 取文本解析。范式不在任何一层表里就是错误，范式内没有停机位。读进来之后 `validate_ontology` 只查一件事：每条边的两端都必须在 `concepts` 里，缺一端就报错，不代补。
 
-## 构造范畴
+## 构造范式
 
 概念 → 对象，边 → 态射；态射名字是 `kind#from->to`，把种类和端点一起编进去，避免同一种类的名字互相顶掉（同一个 `kind` 打两条不同端点的边是合法的）。
 
@@ -55,7 +55,7 @@ axioms:                             # 可选，领域公理
 
 | 组 | 查什么 | 数据来源 |
 |:--|:--|:--|
-| 范畴定律 | 恒等律、结合律各一条，共 2 条 | 库的 `check_identity_laws` / `check_associativity` |
+| 范式定律 | 恒等律、结合律各一条，共 2 条 | 库的 `check_identity_laws` / `check_associativity` |
 | 结构公理 | 只对 Subsumption、Parthood、Causation、Opposition 四类关系发布 | 目录按 `edges[].kind` 发，不看配置 |
 | 领域公理 | 本体 `axioms:` 里声明的规则，逐条校验 | 本体自己声明 |
 | 复合与派生 | 可复合的态射对、复合得出且未声明的关系 | 复合表 |
@@ -76,7 +76,7 @@ md 与 json 同源：序列化同一份 `Report`，md 按 `results.loaded` 有�
 
 ```bash
 cargo run -- category within qtcloud-meta-cli-category [--format json] [--out <路径>] [--strict]
-cargo run --example category_within          # 同一份实现的调用演示
+cargo run --example paradigm_within          # 同一份实现的调用演示
 ```
 
 `--strict` 不改报告内容，只在任一组 `failed > 0` 时让 `run` 返回错误。

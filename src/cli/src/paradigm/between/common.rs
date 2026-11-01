@@ -1,4 +1,4 @@
-//! 范畴间两个操作共用的底座 —— 流程骨架、报告骨架、变更请求与三张表的读取。
+//! 范式间两个操作共用的底座 —— 流程骨架、报告骨架、变更请求与三张表的读取。
 //!
 //! 融合型（unify）与将来的对接型（interface）走同一条五步：选定 → 映射 →
 //! 冲突 → 缺失 → 结论。这一步一步怎么落成报告、缺规则时怎么停、表从哪里读，
@@ -34,7 +34,15 @@ const MAPPINGS: &[(&str, &str)] = &[
     ),
 ];
 
-/// 映射表的键：`<源>--<目标>`，哪一对范畴由键决定，表里不写。
+/// 映射表目录：从当前目录向上找 `examples/between/`。
+pub(crate) const TABLE_SUBDIR: &str = "examples/between";
+
+/// 缺规则时的填表提示：指到该补的映射表文件。
+pub fn fill_hint_for(key: &str) -> String {
+    super::super::common::fill_hint(TABLE_SUBDIR, &format!("{key}.yaml"))
+}
+
+/// 映射表的键：`<源>--<目标>`，哪一对范式由键决定，表里不写。
 pub fn mapping_key(from: &str, to: &str) -> String {
     format!("{from}--{to}")
 }
@@ -46,18 +54,26 @@ pub fn load_table<T: DeserializeOwned + 'static>(
     key: &str,
     label: &str,
 ) -> Result<Option<T>, String> {
-    let Some(text) = MAPPINGS
-        .iter()
-        .find(|(k, _)| *k == key)
-        .map(|(_, text)| text)
-    else {
-        return Ok(None);
+    let file = format!("{key}.yaml");
+    let text = match super::super::common::find_table_file(TABLE_SUBDIR, &file) {
+        Some(path) => std::fs::read_to_string(&path)
+            .map_err(|e| format!("读取 {} 失败：{e}", path.display()))?,
+        None => {
+            let Some(text) = MAPPINGS
+                .iter()
+                .find(|(k, _)| *k == key)
+                .map(|(_, text)| *text)
+            else {
+                return Ok(None);
+            };
+            text.to_string()
+        }
     };
-    let table: T = serde_yml::from_str(text).map_err(|e| format!("{label}表解析失败：{e}"))?;
+    let table: T = serde_yml::from_str(&text).map_err(|e| format!("{label}表解析失败：{e}"))?;
     Ok(Some(table))
 }
 
-/// 按范畴标识装载本体。表里没有返回 `Ok(None)`——范畴未注册。
+/// 按范式标识装载本体。表里没有返回 `Ok(None)`——范式未注册。
 pub fn registered(category: &str) -> Result<Option<OntologyDef>, String> {
     if !within::has_ontology(category) {
         return Ok(None);
@@ -65,7 +81,7 @@ pub fn registered(category: &str) -> Result<Option<OntologyDef>, String> {
     within::load_ontology(category).map(Some)
 }
 
-/// 本体承诺：这个范畴承认哪些对象。直接取概念名。
+/// 本体承诺：这个范式承认哪些对象。直接取概念名。
 pub fn commitment_of(onto: &OntologyDef) -> String {
     let names: Vec<&str> = onto.concepts.iter().map(|c| c.name.as_str()).collect();
     if names.is_empty() {
@@ -77,25 +93,27 @@ pub fn commitment_of(onto: &OntologyDef) -> String {
 
 // ───────────────────────── 报告骨架 ─────────────────────────
 
-/// CLI 选项。范畴间只给 format 与 out，不给 strict。
+/// CLI 选项。范式间只给 format 与 out，不给 strict。
 pub struct Options {
     pub format: String,
     pub out: Option<PathBuf>,
 }
 
-/// change_request 编号：`cr-map-<源范畴名>-<目标范畴名>`。
+/// change_request 编号：`cr-map-<源范式名>-<目标范式名>`。
 pub fn change_request_id(from_name: &str, to_name: &str) -> String {
     format!("cr-map-{from_name}-{to_name}")
 }
 
 /// 五步骨架里由各操作自己给的部分：第 2、3、5 步怎么说、结论是什么、结果维度有什么。
 ///
-/// 第 1 步「选定范畴」与第 4 步「规则缺失」的骨架由 [`assemble_report`] 统一负责。
+/// 第 1 步「选定范式」与第 4 步「规则缺失」的骨架由 [`assemble_report`] 统一负责。
 pub struct Narration {
     /// 第 2 步「映射翻译」的一句话；规则缺失时，这里就是缺失说明。
     pub mapping: String,
     /// `Some` 表示没有规则可用，停在第 4 步生成 change_request。
     pub missing: Option<String>,
+    /// 规则缺失时的填表提示：该补哪个文件、补完怎么接上；不缺时为 `None`。
+    pub fill_hint: Option<String>,
     /// 第 3 步「冲突检查」的一句话（规则齐备时用）。
     pub conflict: String,
     /// 第 5 步「输出结论」的一句话（规则齐备时用）。
@@ -106,12 +124,14 @@ pub struct Narration {
     pub results: Results,
 }
 
-/// 未注册范畴的停机报告：第 1 步写明「未注册，停」，其余四步未走到。
+/// 未注册范式的停机报告：第 1 步写明「未注册，停」，其余四步未走到。
 pub fn unregistered_report(from_label: &str, to_label: &str, name: &str) -> Report {
     let mut trace = vec![Step {
-        name: "选定范畴".to_string(),
+        name: "选定范式".to_string(),
         status: StepStatus::Done,
-        note: Some(format!("{name} 未注册，停")),
+        note: Some(format!(
+            "{name} 未注册，停；把本体放进 examples/paradigm/{name}.yaml 后复跑"
+        )),
     }];
     for step_name in ["映射翻译", "冲突检查", "规则缺失", "输出结论"] {
         trace.push(Step {
@@ -146,7 +166,7 @@ pub fn assemble_report(
 ) -> Report {
     // 过程轨迹固定五步：走到的是 Done，没走到的是 Skipped，停机位（规则缺失）是 Pending。
     let mut trace: Vec<Step> = vec![Step {
-        name: "选定范畴".to_string(),
+        name: "选定范式".to_string(),
         status: StepStatus::Done,
         note: Some(format!("{from_name}，本体承诺 {commitment}")),
     }];
@@ -167,9 +187,10 @@ pub fn assemble_report(
         trace.push(Step {
             name: "规则缺失".to_string(),
             status: StepStatus::Pending,
-            note: Some(format!(
-                "生成 change_request {change_request}，分析暂停在当前范畴"
-            )),
+            note: Some(match &narration.fill_hint {
+                Some(hint) => format!("生成 change_request {change_request}；{hint}"),
+                None => format!("生成 change_request {change_request}，分析暂停在当前范式"),
+            }),
         });
         trace.push(Step {
             name: "输出结论".to_string(),
@@ -249,7 +270,7 @@ pub fn emit(report: &Report, options: &Options) -> Result<(), String> {
 
 /// 走完整条流程：校验格式 → 装载两端本体 → 各操作装配报告 → 渲染。
 ///
-/// 未注册范畴写「未注册，停」并以错误退出；规则缺失是停机位，返回 `Ok(())`。
+/// 未注册范式写「未注册，停」并以错误退出；规则缺失是停机位，返回 `Ok(())`。
 /// `assemble` 拿到两端的名字与源端承诺，按各操作自己的语义给出报告。
 pub fn drive<F>(from: &str, to: &str, options: &Options, assemble: F) -> Result<(), String>
 where
@@ -263,12 +284,12 @@ where
     let Some(from_onto) = registered(from)? else {
         let report = unregistered_report(from, to, from);
         emit(&report, options)?;
-        return Err(format!("范畴「{from}」未注册，停"));
+        return Err(format!("范式「{from}」未注册，停"));
     };
     let Some(to_onto) = registered(to)? else {
         let report = unregistered_report(&from_onto.name, to, to);
         emit(&report, options)?;
-        return Err(format!("范畴「{to}」未注册，停"));
+        return Err(format!("范式「{to}」未注册，停"));
     };
 
     let report = assemble(&from_onto.name, &to_onto.name, &commitment_of(&from_onto))?;

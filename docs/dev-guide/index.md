@@ -23,7 +23,7 @@ qtcloud-meta（量潮元云）位于 `domains/quanttide-meta/apps/qtcloud-meta`�
 
 ```
 ┌─────────────────────────────────────────────┐
-│  L3 · 范畴层                                │
+│  L3 · 范式层                                │
 │  不同方法论的本体如何共存、映射、切换         │
 ├─────────────────────────────────────────────┤
 │  L2 · 本体层                                │
@@ -50,7 +50,7 @@ L1 主数据三表：实体实例、关系与变更请求，变更请求是人�
 -- 实体实例表
 CREATE TABLE entity (
     id TEXT PRIMARY KEY,
-    category_id TEXT NOT NULL,        -- 属于哪个范畴
+    category_id TEXT NOT NULL,        -- 属于哪个范式
     entity_type TEXT NOT NULL,        -- 属于哪个本体类
     data JSON NOT NULL,               -- 实例数据（JSON）
     status TEXT DEFAULT 'draft',      -- draft / active / retired
@@ -87,10 +87,10 @@ CREATE TABLE change_request (
 );
 ```
 
-L3 范畴三表：范畴注册、范畴间映射（函子）与冲突记录，与 L1 同库不同表。
+L3 范式三表：范式注册、范式间映射（函子）与冲突记录，与 L1 同库不同表。
 
 ```sql
--- 范畴注册表
+-- 范式注册表
 CREATE TABLE category (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,               -- 如“流程导向”“实体导向”
@@ -101,7 +101,7 @@ CREATE TABLE category (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 范畴间映射表（函子）
+-- 范式间映射表（函子）
 CREATE TABLE category_mapping (
     id TEXT PRIMARY KEY,
     source_category TEXT REFERENCES category(id),
@@ -171,7 +171,7 @@ EXTRACT_PROMPT = """
 ## 现有本体
 {ontology_ttl}
 
-## 当前范畴
+## 当前范式
 {category_name}: {category_commitment}
 
 ## 输入文本
@@ -201,7 +201,7 @@ EXTRACT_PROMPT = """
 | L1 主数据 | 存储 | SQLite | 单文件，零运维，支持 JSON 字段 |
 | L2 本体 | 编辑 | Protégé（设计时） | 设计期编辑本体文件 |
 | L2 本体 | 推理校验 | Apache Jena / pySHACL | 本地推理与校验 |
-| L3 范畴 | 存储 | SQLite（与 L1 同库不同表） | 范畴注册、函子映射、冲突记录 |
+| L3 范式 | 存储 | SQLite（与 L1 同库不同表） | 范式注册、函子映射、冲突记录 |
 | LLM 知识库 | 本地 LLM | Ollama + Qwen2.5 / Llama3 | 本地跑，无需联网 |
 | LLM 知识库 | 向量检索 | ChromaDB 或 SQLite + sqlite-vec | 存非结构化原文的向量，做语义检索 |
 | LLM 知识库 | 编排 | LangChain 或 LlamaIndex | 编排「检索→抽取→对齐→校验→写入本体」流程 |
@@ -218,11 +218,11 @@ EXTRACT_PROMPT = """
 |:--|:--|
 | L1 数据接入 + L2 事实源 | 合并为 L1 主数据 |
 | L3 本体语义 | 保留为 L2 本体 |
-| L4 元认知 | 保留为 L3 范畴 |
+| L4 元认知 | 保留为 L3 范式 |
 | L5 应用消费 | 简化为人类确认 Web 页 |
 | Kafka + Debezium + DataHub + Neo4j | 全部去掉，用 SQLite + Ollama + ChromaDB |
 
-核心保留：范畴注册、函子映射、冲突标注、人类确认。
+核心保留：范式注册、函子映射、冲突标注、人类确认。
 
 核心砍掉：CDC 事件流、元数据管理平台、图数据库、微服务编排、多级审批引擎。
 

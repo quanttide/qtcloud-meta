@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-alpha.2] - 2026-11-01
+
+### 变更
+
+- 命令 `category` 改名 `paradigm`，用户可见文案与全部文档里的「范畴」改「范式」——随领域边界重划，元工程领域内「范畴」专指康德式分类，数学结构称「范式」；Rust 标识符与 JSON 字段沿用底座库 lau-category-theory 的 category 词汇，不另造第三套
+- `src/category/`、`docs/*/category/`、`examples/category/` 目录随词汇改名
+
+### 新增
+
+- 表改文件优先装载：从当前目录向上找 `examples/paradigm/`、`examples/between/` 的 yaml，找不到回落内置快照；报告的装载步注明本次读的是文件还是快照
+- 停机位闭环：缺规则时 change_request 指到该补的具体文件，补完复跑即接上；未注册范式同样指到该建的本体文件
+
 ## [0.1.0-alpha.1] - 2026-10-06
 
 首个 alpha，`category within` 与 `category between` 两条子命令可用。
@@ -23,4 +35,4 @@
 
 ### 移除
 
-- 演示用的 `entity` / `process` 范畴与 `entity--process` 映射表
+- 演示用的 `entity` / `process` 范式与 `entity--process` 映射表

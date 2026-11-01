@@ -1,7 +1,7 @@
-//! 范畴内：装载与分析 —— 对应 `docs/user-guide/category/within.md`。
+//! 范式内：装载与分析 —— 对应 `docs/user-guide/paradigm/within.md`。
 //!
-//! 流程：YAML 本体 → serde 解析 → lau-category-theory 构造范畴 →
-//! 分析引擎（范畴定律 / 结构公理 / 领域公理 / 复合与派生）→ 报告渲染。
+//! 流程：YAML 本体 → serde 解析 → lau-category-theory 构造范式 →
+//! 分析引擎（范式定律 / 结构公理 / 领域公理 / 复合与派生）→ 报告渲染。
 //!
 //! 底座是 lau-category-theory 0.1.0（MIT），替换原 pr4xis
 //! （CC-BY-NC-SA-4.0，禁商用）。报告走 [`super::common::Report`]，Markdown 与
@@ -19,7 +19,7 @@ const STRUCTURAL_KINDS: [&str; 4] = ["Subsumption", "Parthood", "Causation", "Op
 
 // ───────────────────────── YAML 本体 schema ─────────────────────────
 
-/// 本体定义，schema 见 `docs/dev-guide/category/within.md`。
+/// 本体定义，schema 见 `docs/dev-guide/paradigm/within.md`。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OntologyDef {
     pub name: String,
@@ -138,7 +138,7 @@ pub struct Options {
 
 // ───────────────────────── 装载 ─────────────────────────
 
-/// 装进二进制的本体表：范畴标识 → `examples/category/<标识>.yaml` 的内容。
+/// 装进二进制的本体表：范式标识 → `examples/paradigm/<标识>.yaml` 的内容。
 ///
 /// 源文件仍归 `examples/`，`src/` 下只放实现；这里在编译期读进来，
 /// 因为 `CARGO_MANIFEST_DIR` 指向的是构建期的源码目录——从 crates.io 装下来的
@@ -146,34 +146,58 @@ pub struct Options {
 const ONTOLOGIES: &[(&str, &str)] = &[
     (
         "qtcloud-meta-cli-category",
-        include_str!("../../examples/category/qtcloud-meta-cli-category.yaml"),
+        include_str!("../../examples/paradigm/qtcloud-meta-cli-category.yaml"),
     ),
     (
         "qtcloud-code-cli",
-        include_str!("../../examples/category/qtcloud-code-cli.yaml"),
+        include_str!("../../examples/paradigm/qtcloud-code-cli.yaml"),
     ),
     (
         "qtcloud-work-cli",
-        include_str!("../../examples/category/qtcloud-work-cli.yaml"),
+        include_str!("../../examples/paradigm/qtcloud-work-cli.yaml"),
     ),
 ];
 
-/// 范畴是否已注册（本体表里有没有这一项）。
+/// 表目录：从当前目录向上找 `examples/paradigm/`。
+const TABLE_SUBDIR: &str = "examples/paradigm";
+
+/// 范式是否已注册：内置表里有，或 `examples/paradigm/<id>.yaml` 存在。
 pub fn has_ontology(category: &str) -> bool {
     ONTOLOGIES.iter().any(|(id, _)| *id == category)
+        || super::common::find_table_file(TABLE_SUBDIR, &format!("{category}.yaml")).is_some()
 }
 
-/// 读并解析本体。范畴不在表里按错误返回，不做容错降级。
+/// 读并解析本体。范式不在任何一层表里按错误返回，不做容错降级。
 pub fn load_ontology(category: &str) -> Result<OntologyDef, String> {
-    let text = ONTOLOGIES
-        .iter()
-        .find(|(id, _)| *id == category)
-        .map(|(_, text)| *text)
-        .ok_or_else(|| format!("范畴「{category}」未注册，本体表里没有这一项"))?;
+    load_ontology_ex(category).map(|(onto, _)| onto)
+}
+
+/// 装载本体并附带来源：文件优先（向上找 `examples/paradigm/`），找不到用内置快照。
+pub fn load_ontology_ex(category: &str) -> Result<(OntologyDef, String), String> {
+    let file = format!("{category}.yaml");
+    let (text, source) = match super::common::find_table_file(TABLE_SUBDIR, &file) {
+        Some(path) => {
+            let text = std::fs::read_to_string(&path)
+                .map_err(|e| format!("读取 {} 失败：{e}", path.display()))?;
+            (text, format!("文件 {}", path.display()))
+        }
+        None => {
+            let (_, text) = ONTOLOGIES
+                .iter()
+                .find(|(id, _)| *id == category)
+                .ok_or_else(|| {
+                    format!("范式「{category}」未注册：{TABLE_SUBDIR}/{file} 不存在，内置表里也没有这一项")
+                })?;
+            (
+                text.to_string(),
+                "内置快照（当前目录向上未找到表目录）".to_string(),
+            )
+        }
+    };
     let onto: OntologyDef =
-        serde_yml::from_str(text).map_err(|e| format!("范畴「{category}」的本体解析失败：{e}"))?;
+        serde_yml::from_str(&text).map_err(|e| format!("范式「{category}」的本体解析失败：{e}"))?;
     validate_ontology(&onto)?;
-    Ok(onto)
+    Ok((onto, source))
 }
 
 /// 边引用的概念必须在 concepts 里。
@@ -195,7 +219,7 @@ fn validate_ontology(onto: &OntologyDef) -> Result<(), String> {
     Ok(())
 }
 
-// ───────────────────────── 构造范畴 ─────────────────────────
+// ───────────────────────── 构造范式 ─────────────────────────
 
 /// 边 → 态射的唯一名字：种类 + 端点，避免同名种类互相顶掉。
 fn edge_morphism_name(kind: &str, from: &str, to: &str) -> String {
@@ -327,7 +351,7 @@ pub fn build_category(onto: &OntologyDef) -> FiniteCategory {
 
 // ───────────────────────── 分析 ─────────────────────────
 
-/// 范畴定律（恒等律、结合律）——库自带的标准检查。
+/// 范式定律（恒等律、结合律）——库自带的标准检查。
 fn category_law_group(cat: &FiniteCategory) -> LawGroup {
     let identity_ok = cat.check_identity_laws();
     let associativity_ok = cat.check_associativity();
@@ -340,7 +364,7 @@ fn category_law_group(cat: &FiniteCategory) -> LawGroup {
     }
     let passed = usize::from(identity_ok) + usize::from(associativity_ok);
     LawGroup {
-        label: "范畴定律".to_string(),
+        label: "范式定律".to_string(),
         total: 2,
         passed,
         failed: failures.len(),
@@ -446,8 +470,8 @@ fn morphism_info(m: &Morphism) -> MorphismInfo {
     }
 }
 
-/// 装配整份报告。
-pub fn build_report(onto: &OntologyDef, cat: &FiniteCategory) -> Report {
+/// 装配整份报告。`table_source` 是本体表来源（文件路径或内置快照），写进装载步的备注。
+pub fn build_report(onto: &OntologyDef, cat: &FiniteCategory, table_source: &str) -> Report {
     let objects: Vec<ObjectInfo> = onto
         .concepts
         .iter()
@@ -554,7 +578,7 @@ pub fn build_report(onto: &OntologyDef, cat: &FiniteCategory) -> Report {
             Step {
                 name: "装载".to_string(),
                 status: StepStatus::Done,
-                note: None,
+                note: Some(format!("本体表来源：{table_source}")),
             },
             Step {
                 name: "分析".to_string(),
@@ -583,11 +607,11 @@ pub fn build_report(onto: &OntologyDef, cat: &FiniteCategory) -> Report {
 
 // ───────────────────────── CLI 入口 ─────────────────────────
 
-/// 执行 `category within`：装载 → 分析 → 渲染。未知范畴或格式报错，由调用方转成非零退出。
+/// 执行 `paradigm within`：装载 → 分析 → 渲染。未知范式或格式报错，由调用方转成非零退出。
 pub fn run(category: &str, options: &Options) -> Result<(), String> {
-    let onto = load_ontology(category)?;
+    let (onto, source) = load_ontology_ex(category)?;
     let cat = build_category(&onto);
-    let report = build_report(&onto, &cat);
+    let report = build_report(&onto, &cat, &source);
 
     let text = match options.format.as_str() {
         "md" => render_markdown(&report),
@@ -636,14 +660,14 @@ mod tests {
 
     /// 未注册按错误返回，不静默降级。
     #[test]
-    fn 未注册的范畴是错误() {
+    fn 未注册的范式是错误() {
         assert!(!has_ontology("entity"));
         assert!(load_ontology("entity").is_err());
     }
 
     /// 回归：成环的本体建复合表不能失控——原实现在 code 的自环上吃到 3GB 中止。
     #[test]
-    fn 成环的本体也能建范畴并过范畴定律() {
+    fn 成环的本体也能建范式并过范式定律() {
         for id in ["qtcloud-code-cli", "qtcloud-work-cli"] {
             let onto = load_ontology(id).unwrap();
             let cat = build_category(&onto);
@@ -657,7 +681,7 @@ mod tests {
     fn 报告里四组校验没有失败项() {
         let onto = load_ontology("qtcloud-meta-cli-category").unwrap();
         let cat = build_category(&onto);
-        let report = build_report(&onto, &cat);
+        let report = build_report(&onto, &cat, "测试");
 
         assert_eq!(report.trace.len(), 2);
         assert!(
