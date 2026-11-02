@@ -16,7 +16,7 @@ qtcloud-meta 是**系统的元认知工具**。写资料的 AI 没有连续的�
 ## 从哪读起
 
 - [为什么用](intro/index.md)——还没被说服，先读这页；
-- [用户指南](user-guide/index.md)——要上手，构建与命令的实测用法；
+- [用户指南](user-guide/index.md)——要上手，安装与命令的实测用法；
 - [开发指南](dev-guide/index.md)——要改代码或改文档；
 - [API 参考](api-references/index.md)——查命令面与设计取向；
 - [三层极简架构方案](../../../docs/index.md)——平台的完整方案与背景。

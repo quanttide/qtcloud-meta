@@ -10,7 +10,7 @@ qtcloud-meta CLI 的文档组，按雪花写作法从[《三层极简架构方�
 
 - [index.md](index.md)：总览——定义一句、两面坐标与边界、从哪读起。
 - [intro/index.md](intro/index.md)：说服页——为什么值得用：因果链、概念体系、实跑证据、三类用户。
-- [user-guide/](user-guide/index.md)：用法——构建、三条命令实测、开关与退出码；分本体、范式（内 / 间）、属性几篇。
+- [user-guide/](user-guide/index.md)：用法——安装与三条命令的实测用法，分本体、范式（内 / 间）、属性几篇。
 - [dev-guide/](dev-guide/index.md)：工程——结构、日常检查、发布流程、文档分工与同步。
 - [api-references/](api-references/index.md)：接口——命令树、设计依据与设计取向。
 

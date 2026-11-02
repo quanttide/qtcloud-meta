@@ -4,99 +4,81 @@ stage: clarifying
 
 # 用户指南
 
-qtcloud-meta 是**系统的元认知工具**：写资料的 AI 没有连续的记忆，概念容易不一致；它把「什么算一致」立成概念体系（范式、范畴、属性、公理、映射、标准），拿去照系统自己写下的资料——出三份报告，范式照结构、属性照字段。规则全部写死在代码里——不调 LLM，同一输入永远同一输出。
+这页讲怎么用：装上、跑起来、看懂报告。
 
-## 构建
+## 安装
 
 ```bash
-cd src/cli
-cargo build                    # 产物在 target/debug/qtcloud-meta
-cargo run -- paradigm within qtcloud-work-cli   # 或直接跑产物
+cargo install qtcloud-meta-cli
 ```
 
-下文用 `qtcloud-meta` 代指这个二进制。
+装完就有 `qtcloud-meta` 命令。要从源码构建或改代码，见[开发指南](../dev-guide/index.md)。
 
 ## 三条命令
 
-### 范式内：这份本体装得进吗
+### 范式内：这份本体立得住吗
 
-题目：workCLI 的本体表装不装得进 lau 范畴的结构。
+什么时候用：你改了本体表，想知道对象、关系、公理还对不对。
 
 ```bash
 qtcloud-meta paradigm within qtcloud-work-cli
 ```
 
-实际返回（节选）：
+你会看到什么——报告先交代这份表从哪读的，再逐个列出装进来的对象，最后给校验结论：
 
 ```text
 # 范式分析报告：QtcloudWorkCli
 
-数据源：.../qtcloud-work/src/cli：README.md，src/{workspace/model.rs, ...} 的领域模型
-方法：lau-category-theory 0.1.0 的范式构造、恒等、复合与公理校验
 本体表来源：文件 .../examples/paradigm/qtcloud-work-cli.yaml
 
 ## 装载
-- 对象 13 个：Workspace、Workflow、Step、Criterion、WorkOrder、...
+- 对象 13 个：Workspace、Workflow、Step、Criterion、...
 ```
 
-白话：报告头先交代三件事——代码数据源是哪、用什么数学方法校验、本体表这次读的是文件还是内置快照；装载步把对象、关系、公理逐条摆出来过数学校验，结尾给结论。
+白话：装得进、立得住，或者哪里挂了，一眼看到底。
 
-### 范式间：两份本体对得上吗
+### 范式间：两边的说法翻得通吗
 
-题目：code 域的断言翻译成 work 域的词汇，翻得通吗。
+什么时候用：一个域的断言要用到另一个域——code 域的东西要落进 work 域的账本。
 
 ```bash
 qtcloud-meta paradigm between qtcloud-code-cli qtcloud-work-cli
 ```
 
-实际返回（节选）：
+你会看到什么——五步走完，翻通的逐对列出：
 
 ```text
-# 范式间报告：QtcloudCodeCli → QtcloudWorkCli
-- 1 选定范式：QtcloudCodeCli，本体承诺 ContractConfig、CodeConfig、...
 - 2 映射翻译：查到 6 条规则
-- 3 冲突检查：无 true_conflict 记录，按主文档继续
 - 5 输出结论：6 条断言翻到「QtcloudWorkCli」
-- 结论：ContractConfig → Artifact；CodeConfig → Criterion；AlignResult → Outcome；...
+- 结论：ContractConfig → Artifact；CodeConfig → Criterion；...
 ```
 
-白话：五步走——选定、映射、冲突、缺失、结论。缺映射表时不是报错退出，是停在 change_request 指路：报告会点名该补的文件（`examples/between/<源>--<目标>.yaml`），补完复跑即接上。
+缺翻译规则不算错误：报告会点名该补哪个文件，补完再跑就接上。
 
-### 属性校准：字段用法对标准核
+### 属性校准：字段写对了吗
 
-题目：这份 YAML 的字段用法，合不合标准属性。
+什么时候用：你写完或改完一张表，想核字段合不合标准。
 
 ```bash
-qtcloud-meta property calibrate examples/property/standard.yaml   # 对标准表自己：只出结构自检
-qtcloud-meta property calibrate <你的文件.yaml ...>               # 对文档：逐键核
+qtcloud-meta property calibrate 你的表.yaml
 ```
 
-实际返回（对标准表，节选）：
+你会看到什么——不合的逐条列出（哪份文件、哪个路径、错在哪），还没进标准的字段单独一份清单。对标准表自己跑则只做体检：标准自己站得住，才敢拿去量东西。
 
-```text
-- 装载：标准表来源：文件 .../examples/property/standard.yaml
-- 标准自检：9 条属性：type 都是 OpenAPI 类型，pattern 编译得过，枚举非空
-- 校准：0 个文件：命中 0 处，通过 0，失败 0，待收录 0 处
-```
+## 常用开关
 
-白话：标准表自己是尺子不是测量对象，对它跑只出结构自检；对别的文件逐键核，失败逐条列出（改目标还是改标准由标准维护者定），标准外的字段进待收录清单——补标准表后复跑即接上。
-
-## 三个通用开关
-
-- `--format md|json`：默认 md 给人读，json 给脚本读，同源。
-- `--out <路径>`：写文件，不打终端。
-- `--strict`：任一失败退出码 1。`within` 和 `calibrate` 有；`between` 没有——它缺规则走 change_request 指路，不算失败，加了会报参数错。
-
-退出码：0 正常；1 目标不在或校准有失败（如 `范式「no-such-paradigm」未注册`）；2 用法错（子命令写错、开关不存在——本 CLI 没有 `--version`）。
+- `--format json`：默认输出给人看的文本，加这个变成给程序读的 JSON。
+- `--out 文件.md`：存到文件，不打在屏幕上。
+- `--strict`：有任何不合格就返回非零退出码，方便配进检查脚本。范式内和属性校准有；范式间缺规则是「等人补」，不算失败，没这个开关。
 
 ## 报告怎么读
 
-每份报告都带轨迹（装载 → 分析 → 结论）。先看「装载」步：它写明本次读的是文件还是内置快照——表改了没生效，多半是装好的二进制向上找不到表目录、落回了快照。
+每份报告都是一段一段的轨迹：走到了哪步、这步发生了什么。先看开头「表从哪读的」——如果你刚改过表、报告却没变，多半是命令没读到你的文件：装好的命令在别处运行时读不到本地表，会退回内置的副本。确认文件位置再跑一次。
 
-## 文档导航
+## 这页之外
 
-- [本体](ontology.md)：本体及关系的数据源主要是规格；命令行只提供本体录入格式，不提供 LLM，抽取与整理在进入命令行之前完成。
-- [范式](paradigm/index.md)：本体及关系录入系统之后，范式的性质分析按既定规则走，不用 LLM 猜，分范式内、范式间两篇。
-- [属性](property.md)：校准字段用法对不对得上标准属性，九条确认字段各带机器可查的规则。
-
-命令与接口见 [API 参考](../api-references/index.md)，流程的行为定义见主文档的[用户指南](../../../../docs/user-guide/index.md)，构建环境见主文档[开发指南](../../../../docs/dev-guide/index.md)。
+- [本体](ontology.md)：本体从哪来、怎么录——注意录入命令还没做，这页是流程定义。
+- [范式](paradigm/index.md)：范式内、范式间两篇细讲。
+- [属性](property.md)：九条字段标准各是什么。
+- [API 参考](../api-references/index.md)：命令面与设计取向。
+- 主文档[用户指南](../../../../docs/user-guide/index.md)：平台的整体流程。
