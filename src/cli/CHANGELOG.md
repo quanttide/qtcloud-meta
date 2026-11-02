@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 变更
+
+- 标准表分组键 `group` 改 `category`，值改英文机器名（identity／classification／location／status／content）——`category` 本身也是九条标准属性之一，与 `type` 同款双义；标准自检新增分组守卫：分组必须是英文机器名
+
 ## [0.1.0-alpha.3] - 2026-11-02
 
 ### 新增
