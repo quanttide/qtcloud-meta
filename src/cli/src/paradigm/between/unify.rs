@@ -109,6 +109,7 @@ pub fn build_report(
                     loaded: None,
                     analyzed: None,
                     translation: None,
+                    calibrated: None,
                 },
             },
         );
@@ -159,6 +160,7 @@ pub fn build_report(
                 loaded: None,
                 analyzed: None,
                 translation: Some(translation),
+                calibrated: None,
             },
         },
     )

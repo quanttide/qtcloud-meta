@@ -1,0 +1,63 @@
+# 标准属性：字段名只有一个意思，换地方也不换。
+#
+# 机器可查部分按 OpenAPI 风格写：`type` 是数据类型，`format`／`pattern`／`enum`
+# 是它的修饰。`type` 本身也是九条确认的标准属性之一——系统定义的类型，本体写定，用户不改。
+# 标记写在 `status`：confirmed 是定过的，suspected 是照道理推出来、还没定的。
+name: qtcloud-property-standard
+version: "1.0"
+properties:
+  # 标识属性
+  - name: id
+    group: 标识属性
+    status: confirmed
+    type: string
+    format: uuid
+    description: 全局唯一键，用 uuid；改名不动它，引用认它。
+  - name: name
+    group: 标识属性
+    status: confirmed
+    type: string
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: 机器可读标识，小写、连字符、英文；同一类里不重复。
+  - name: label
+    group: 标识属性
+    status: confirmed
+    type: string
+    description: 给人看的称呼，可中文、可改，不进引用。
+  - name: title
+    group: 标识属性
+    status: confirmed
+    type: string
+    description: 标题，写在正文第一行。
+  # 分类属性
+  - name: category
+    group: 分类属性
+    status: confirmed
+    type: string
+    description: 用户自定义的类别，谁用谁定，可增可删。
+  - name: type
+    group: 分类属性
+    status: confirmed
+    type: string
+    enum: [陈述型, 程序型]
+    description: 系统定义的类型，由本体写定，用户不改；格用 family 承载。
+  # 位置属性
+  - name: path
+    group: 位置属性
+    status: confirmed
+    type: string
+    pattern: '^(.*/|.*\.[A-Za-z0-9]+)$'
+    description: 存在哪，写到目录或文件——目录以 / 结尾，文件带扩展名。
+  # 状态属性
+  - name: status
+    group: 状态属性
+    status: confirmed
+    type: string
+    enum: [confirmed, suspected]
+    description: 可信到什么程度。
+  # 内容属性
+  - name: description
+    group: 内容属性
+    status: confirmed
+    type: string
+    description: 一段话说清它是什么，管到哪，收什么不收什么。

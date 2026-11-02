@@ -13,6 +13,7 @@ cargo install qtcloud-meta-cli
 ```bash
 qtcloud-meta paradigm within  <范式>            [--format md|json] [--out <路径>] [--strict]
 qtcloud-meta paradigm between <源范式> <目标范式> [--format md|json] [--out <路径>]
+qtcloud-meta property calibrate <YAML文件...> [--format md|json] [--out <路径>] [--strict]
 ```
 
 表分两层：仓库内 `examples/paradigm/`、`examples/between/` 是正本——装载时从当前目录向上找文件，找到读文件；装完的二进制在别处运行、向上找不到表目录时，回落到内置快照（三份本体 `qtcloud-meta-cli-category`、`qtcloud-code-cli`、`qtcloud-work-cli`），装完即可用。报告的装载步会注明本次读的是文件还是快照。
@@ -23,6 +24,8 @@ qtcloud-meta paradigm between qtcloud-code-cli qtcloud-work-cli
 ```
 
 范式间配了三条走向，首尾相接成圈：`code → work → meta → code`。反向没有映射表，会停在第 4 步生成 change_request——报告会指到该补的具体文件（`examples/between/<源>--<目标>.yaml`），补完复跑即接上：停机位是回路的入口，不是错误。
+
+属性校准对着标准属性表核字段用法：标准在 `examples/property/standard.yaml`（OpenAPI 风格：type／format／pattern／enum，type 本身也是标准属性之一），装载同上文件优先、快照保底；标准先自检再校准，失败逐条列出，标准外字段进待收录清单（补标准表后复跑即接上）。
 
 ## 文档
 

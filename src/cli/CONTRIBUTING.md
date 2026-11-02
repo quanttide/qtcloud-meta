@@ -28,6 +28,10 @@ stage 只随实际进展推进，不由文档本身的改写决定：写了设�
 
 `src/cli/docs/` 当前全部是 `clarifying`，按本文件的规则都不是事实源；两条流程的事实源是主文档 `docs/`，见 [docs/dev-guide/index.md](docs/dev-guide/index.md) 的文档同步一节。
 
+## Skill 命名
+
+本仓未来随 CLI 发布的 Skill，命名一律以 `qtcloud-meta-` 开头，确保与其他仓的 Skill 命名隔离。
+
 ## 依赖与工具的坑（踩过一次，别再踩）
 
 - **`lau-category-theory` 的 `FiniteCategory::set_composition`** 只往 `composition` HashMap 插 `(f.name,g.name)→h`，**不往 `morphisms` 里加态射**；`check_associativity` 遍历的三元组全部取自 `cat.morphisms`。所以别在调用方自己建复合闭包（`within` 曾因此组合爆炸）——用有界展开。

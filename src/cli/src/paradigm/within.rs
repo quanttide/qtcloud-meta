@@ -594,6 +594,7 @@ pub fn build_report(onto: &OntologyDef, cat: &FiniteCategory, table_source: &str
             }),
             analyzed: Some(analyzed),
             translation: None,
+            calibrated: None,
         },
         relations,
         conclusion,

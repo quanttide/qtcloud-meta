@@ -4,7 +4,7 @@ stage: clarifying
 
 # 用户指南
 
-本文讲 qtcloud-meta CLI 的日常使用：怎么构建、怎么跑，以及两条流程各自在系统里的位置。命令与接口见 [API 参考](../api-references/index.md)，流程的行为定义见主文档的[用户指南](../../../../docs/user-guide/index.md)。
+本文讲 qtcloud-meta CLI 的日常使用：怎么构建、怎么跑，以及三条流程各自在系统里的位置。命令与接口见 [API 参考](../api-references/index.md)，流程的行为定义见主文档的[用户指南](../../../../docs/user-guide/index.md)。
 
 ## 构建与运行
 
@@ -22,5 +22,6 @@ cargo run
 
 - [本体](ontology.md)：本体及关系的数据源主要是规格；命令行只提供本体录入格式，不提供 LLM，抽取与整理在进入命令行之前完成。
 - [范式](paradigm/index.md)：本体及关系录入系统之后，范式的性质分析按既定规则走，不用 LLM 猜，分范式内、范式间两篇。
+- [属性](property.md)：校准字段用法对不对得上标准属性，九条确认字段各带机器可查的规则。
 
 > 命令尚未实现，CLI 当前处于骨架阶段：此前两版命令设计（七个命令、单个 `change submit`）都已删除，现在没有任何命令设计。上文是流程定义，命令落地后在此补充具体用法。

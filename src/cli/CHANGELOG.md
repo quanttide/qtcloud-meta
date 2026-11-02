@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-alpha.3] - 2026-11-02
+
+### 新增
+
+- `property calibrate <YAML文件...>`：属性校准——字段用法对着标准属性表逐条核；标准表 `examples/property/standard.yaml` 按 OpenAPI 风格写（type／format／pattern／enum，九条确认字段，`type` 本身也是标准属性之一）；装载同范式表文件优先、快照保底；标准先自检再校准；失败逐条出报告，标准外字段进待收录清单（补标准表后复跑即接上）；`--strict` 失败转非零
+
+### 变更
+
+- 报告结构 `Results` 增校准维 `calibrated`，Markdown 出口按三维分版式
+- 依赖新增 `regex`（标准表 pattern 校验）
+- README／文档同步：三条用法、用户指南增属性篇、API 参考的已实现接口节更新到现状
+
 ## [0.1.0-alpha.2] - 2026-11-01
 
 ### 变更

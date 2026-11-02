@@ -1,7 +1,7 @@
 //! qtcloud-meta CLI 入口。参数解析在这一层，范式分析的实现在库里。
 
 use clap::{Parser, Subcommand};
-use qtcloud_meta_cli::paradigm::{between, within};
+use qtcloud_meta_cli::paradigm::{between, property, within};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -17,6 +17,11 @@ enum Commands {
     Paradigm {
         #[command(subcommand)]
         sub: ParadigmCommands,
+    },
+    /// 属性校准
+    Property {
+        #[command(subcommand)]
+        sub: PropertyCommands,
     },
 }
 
@@ -51,6 +56,25 @@ enum ParadigmCommands {
     },
 }
 
+#[derive(Subcommand, Debug)]
+enum PropertyCommands {
+    /// 属性校准：字段用法对着标准属性表逐条核
+    Calibrate {
+        /// 要校准的 YAML 文件
+        #[arg(value_name = "FILE", required = true)]
+        files: Vec<PathBuf>,
+        /// 输出格式：md 或 json
+        #[arg(long, default_value = "md")]
+        format: String,
+        /// 输出文件路径，缺省打印到 stdout
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// 严格模式：任一属性校验失败即非零退出
+        #[arg(long)]
+        strict: bool,
+    },
+}
+
 fn main() -> std::process::ExitCode {
     let cli = Cli::parse();
     match cli.command {
@@ -76,6 +100,21 @@ fn main() -> std::process::ExitCode {
             } => {
                 let options = between::Options { format, out };
                 finish(between::run(&from, &to, &options))
+            }
+        },
+        Commands::Property { sub } => match sub {
+            PropertyCommands::Calibrate {
+                files,
+                format,
+                out,
+                strict,
+            } => {
+                let options = property::Options {
+                    format,
+                    out,
+                    strict,
+                };
+                finish(property::run(&files, &options))
             }
         },
     }

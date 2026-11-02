@@ -13,6 +13,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 use super::between::TranslationInfo;
+use super::property::CalibratedInfo;
 use super::within::{AnalyzedInfo, LoadedInfo, RelationInfo};
 
 // ───────────────────────── 表从哪读 ─────────────────────────
@@ -74,7 +75,7 @@ pub struct Step {
     pub note: Option<String>,
 }
 
-/// 结果维度：三个可选，谁有填谁。
+/// 结果维度：四个可选，谁有填谁。
 #[derive(Debug, Serialize)]
 pub struct Results {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -83,6 +84,8 @@ pub struct Results {
     pub analyzed: Option<AnalyzedInfo>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub translation: Option<Vec<TranslationInfo>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub calibrated: Option<CalibratedInfo>,
 }
 
 /// 一份报告：过程轨迹 + 结果，外加关系清单、结论、挂起项三个公共出口。
@@ -108,9 +111,11 @@ pub struct Report {
 
 // ───────────────────────── 渲染 ─────────────────────────
 
-/// Markdown 出口；按 results 里有哪一维选版式，两个模块共用这一个出口。
+/// Markdown 出口；按 results 里有哪一维选版式，三个模块共用这一个出口。
 pub fn render_markdown(report: &Report) -> String {
-    if report.results.loaded.is_some() {
+    if report.results.calibrated.is_some() {
+        render_property(report)
+    } else if report.results.loaded.is_some() {
         render_within(report)
     } else {
         render_between(report)
@@ -226,6 +231,47 @@ fn render_between(report: &Report) -> String {
             out.push_str(&format!("- 结论：{}\n", report.conclusion.join("；")));
         }
         None => {}
+    }
+    out
+}
+
+/// 属性校准版式：四步轨迹 + 校准结果（失败逐条、待收录封顶 50 行，全量看 JSON）。
+fn render_property(report: &Report) -> String {
+    let mut out = String::new();
+    out.push_str(&format!("# 属性校准报告：{}\n\n", report.category));
+    for step in &report.trace {
+        if let Some(note) = &step.note {
+            out.push_str(&format!("- {}：{}\n", step.name, note));
+        }
+    }
+    if let Some(calibrated) = &report.results.calibrated {
+        out.push_str("\n## 校准\n");
+        out.push_str(&format!(
+            "- {} 个文件，命中标准属性 {} 处：通过 {}，失败 {}\n",
+            calibrated.files, calibrated.hits, calibrated.passed, calibrated.failed
+        ));
+        for failure in &calibrated.failures {
+            out.push_str(&format!("  - 失败：{failure}\n"));
+        }
+        if !calibrated.unknown.is_empty() {
+            out.push_str(&format!(
+                "- 标准外字段 {} 处（待收录）：\n",
+                calibrated.unknown.len()
+            ));
+            for field in calibrated.unknown.iter().take(50) {
+                out.push_str(&format!("  - {}::{}\n", field.file, field.path));
+            }
+            if calibrated.unknown.len() > 50 {
+                out.push_str(&format!(
+                    "  - ……其余 {} 处见 JSON 出口\n",
+                    calibrated.unknown.len() - 50
+                ));
+            }
+        }
+    }
+    out.push_str("\n## 结论\n");
+    for (index, line) in report.conclusion.iter().enumerate() {
+        out.push_str(&format!("{}. {line}\n", index + 1));
     }
     out
 }
