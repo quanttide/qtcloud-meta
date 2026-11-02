@@ -24,6 +24,14 @@ use super::common::{
 /// OpenAPI 数据类型（标量与容器），标准表的 `type` 只认这些。
 const OPENAPI_TYPES: [&str; 6] = ["string", "number", "integer", "boolean", "array", "object"];
 
+/// 分组名与机器标识共用的形状：小写、连字符、英文。
+static MACHINE_NAME: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+
+fn machine_name() -> &'static Regex {
+    MACHINE_NAME
+        .get_or_init(|| Regex::new("^[a-z][a-z0-9]*(-[a-z0-9]+)*$").expect("内置 pattern 应能编译"))
+}
+
 /// 标准属性表：一条属性一个定义，schema 关键字按 OpenAPI 风格平铺。
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Standard {
@@ -38,8 +46,9 @@ pub struct Standard {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PropertyDef {
     pub name: String,
+    /// 分组：英文机器名；它同时是九条标准属性之一（用户自定义类别），与 type 同款双义。
     #[serde(default)]
-    pub group: String,
+    pub category: String,
     /// `confirmed` 或 `suspected`，缺省按怀疑算。
     #[serde(default)]
     pub status: String,
@@ -113,6 +122,12 @@ fn standard_self_check(standard: &Standard) -> Result<(), String> {
     for property in &standard.properties {
         if !seen.insert(property.name.as_str()) {
             return Err(format!("标准表里属性 {} 重复", property.name));
+        }
+        if !machine_name().is_match(&property.category) {
+            return Err(format!(
+                "属性 {} 的 category「{}」不是英文机器名",
+                property.name, property.category
+            ));
         }
         if !OPENAPI_TYPES.contains(&property.typ.as_str()) {
             return Err(format!(
@@ -434,6 +449,26 @@ mod tests {
         assert_eq!(standard.name, "qtcloud-property-standard");
         assert_eq!(standard.properties.len(), 9);
         standard_self_check(&standard).expect("自检应通过");
+        // 分组用英文机器名：五个组各归其位。
+        let categories: Vec<&str> = standard
+            .properties
+            .iter()
+            .map(|property| property.category.as_str())
+            .collect();
+        assert_eq!(
+            categories,
+            vec![
+                "identity",
+                "identity",
+                "identity",
+                "identity",
+                "classification",
+                "classification",
+                "location",
+                "status",
+                "content"
+            ]
+        );
     }
 
     /// name 的 pattern：小写连字符英文过，大写与空格不过。
