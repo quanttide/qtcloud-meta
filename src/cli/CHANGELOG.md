@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### 新增
+
+- 用户指南重写为实测用法：三条命令各配真实返回与白话、通用开关与退出码、报告读法；清掉「命令尚未实现」「两条流程」等过时表述
+
 ### 变更
 
 - 标准表分组键 `group` 改 `category`，值改英文机器名（identity／classification／location／status／content）——`category` 本身也是九条标准属性之一，与 `type` 同款双义；标准自检新增分组守卫：分组必须是英文机器名
