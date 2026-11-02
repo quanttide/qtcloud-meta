@@ -4,18 +4,19 @@
 
 ## 仓库现状
 
-qtcloud-meta（量潮元云）位于 `domains/quanttide-meta/apps/qtcloud-meta`，是 quanttide-meta 的子模块：独立提交、独立推送，父仓库只更新指针。
+qtcloud-meta（量潮元云）位于 `domains/quanttide-code/apps/qtcloud-meta`，是 quanttide-code 的子模块：独立提交、独立推送，父仓库只更新指针。
 
-仓库目前只有方案文档，没有实现代码；此前的 `src/studio` 已迁出至归档仓 platform/studio。当前的维护对象是文档，以及后续按方案落地的实现。
+仓库两块：`docs/` 是三层方案的事实源；`src/cli` 是已实现的命令行（三条命令，crates.io 发到 0.1.0-alpha.3），其文档在 [CLI 文档](../../src/cli/docs/index.md)。此前的 `src/studio` 已迁出至归档仓 platform/studio。
 
 目录结构：
 
 - `README.md`：仓库简介；
 - `docs/index.md`：三层极简架构方案总览，只保留全局结构与文档导航；
 - `docs/user-guide/index.md`：用户指南，完整的使用过程与示例；
-- `docs/dev-guide/index.md`：本文件，方案细节与维护任务。
+- `docs/dev-guide/index.md`：本文件，方案细节与维护任务；
+- `src/cli/`：已实现的命令行工程与它的文档（`src/cli/docs/`），见 [CLI 文档](../../src/cli/docs/index.md)。
 
-文档用雪花写作法逐层分解：`index.md` 建立对平台的全局想象，过程展开到用户指南，结构与实现细节展开到本文件。新增内容先判断归属，不把细节写回 `index.md`。接手后的阅读顺序：`docs/index.md` → `docs/user-guide/index.md` → 本文件。
+文档用雪花写作法逐层分解：`index.md` 建立对平台的全局想象，过程展开到用户指南，结构与实现细节展开到本文件。新增内容先判断归属，不把细节写回 `index.md`。接手后的阅读顺序：`docs/index.md` → `docs/user-guide/index.md` → 本文件；要上手命令另看 [CLI 用户指南](../../src/cli/docs/user-guide/index.md)。
 
 ## 方案细节
 

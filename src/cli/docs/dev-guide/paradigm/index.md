@@ -50,4 +50,4 @@ qtcloud-meta paradigm between <源范式> <目标范式> [--format md|json] [--o
 
 ## 待定
 
-`between` 会不会拆成 `between unify` 与 `between interface` 两个子命令，取舍与迁移路径写在 [between.md](between.md)；对接型（函子校验）尚未实现。命令面到什么时候定稿见 [API 参考](../../api-references/index.md)。
+`between` 会不会拆成 `between unify` 与 `between interface` 两个子命令，取舍与迁移路径写在 [between.md](between.md)；对接型（函子校验）尚未实现。命令面现状见 [API 参考](../../api-references/index.md)。

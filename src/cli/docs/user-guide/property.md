@@ -4,7 +4,7 @@ stage: clarifying
 
 # 属性校准
 
-校准回答一个问题：这份 YAML 里的字段用法，合不合标准属性。
+属性是概念体系里照字段的那一层。校准回答一个问题：这份 YAML 里的字段用法，合不合标准属性。
 
 标准在 `examples/property/standard.yaml`，按 OpenAPI 风格写：`type` 是数据类型，`format`／`pattern`／`enum` 是修饰。九条确认字段（id、name、label、title、category、type、path、status、description）各带机器可查的规则；`type` 本身就是九条之一——系统定义的类型，取值陈述型或程序型。
 
