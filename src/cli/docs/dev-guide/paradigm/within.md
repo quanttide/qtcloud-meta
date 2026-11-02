@@ -70,12 +70,12 @@ axioms:                             # 可选，领域公理
 
 外壳在 [`common.md`](common.md)：`Report` 的过程维度填两步（装载、分析，都是 Done），结果维度填 `loaded` 与 `analyzed`；`relations` 是声明边加派生关系的清单，`conclusion` 固定三句。装载段给对象与标签、态射的恒等与声明拆分；分析段给四组的通过情况与两个原因字段。
 
-md 与 json 同源：序列化同一份 `Report`，md 按 `results.loaded` 有没有值选版式，所以 inside 模块里没有第二份渲染逻辑。
+md 与 json 同源：序列化同一份 `Report`，md 按结果维度选版式（属性校准 → 范式内 → 范式间，三份报告各一版），所以 within 模块里没有第二份渲染逻辑。
 
 ## CLI 与示例
 
 ```bash
-cargo run -- category within qtcloud-meta-cli-category [--format json] [--out <路径>] [--strict]
+cargo run -- paradigm within qtcloud-meta-cli-category [--format json] [--out <路径>] [--strict]
 cargo run --example paradigm_within          # 同一份实现的调用演示
 ```
 

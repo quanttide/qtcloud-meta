@@ -22,7 +22,7 @@ stage: clarifying
 | `from` / `to` | 范式间专用的可机读端点，范式内留空 |
 | `source` | 数据源，范式内填本体的 `source` |
 | `trace` | 过程轨迹 |
-| `results` | 三个可选结果 |
+| `results` | 四个可选结果 |
 | `relations` | 关系清单（范式内填，声明边加派生关系） |
 | `conclusion` | 结论若干句 |
 | `pending` | 挂起的 change_request（范式间缺规则时填，与 `conclusion` 不同时出现） |
@@ -35,10 +35,11 @@ stage: clarifying
 |:--|:--|:--|
 | within | 装载、分析（两步写死，都是 Done） | `loaded` + `analyzed` |
 | between | 选定、映射、冲突、缺失、结论五步 | `translation` |
+| property | 装载、标准自检、校准、结论四步 | `calibrated` |
 
 ## 两个渲染出口
 
-`render_markdown` 按 `results.loaded` 有没有值选版式：有则是范式内四段（装载、分析、关系清单、给后续分析的结论），没有则是范式间五步轨迹加收尾（`pending` 或 `conclusion`）。`render_json` 序列化同一份 `Report`，两个出口同源。
+`render_markdown` 按结果维度选版式：`calibrated` 有值出属性校准版；否则 `loaded` 有值出范式内四段（装载、分析、关系清单、给后续分析的结论）；再没有则是范式间五步轨迹加收尾（`pending` 或 `conclusion`）。`render_json` 序列化同一份 `Report`，出口同源。
 
 模块里不再各自渲染：`within::run` 与 `between/common.rs` 的 `emit` 各拿一份 `Report` 选格式，再写 stdout 或 `--out` 指定的文件，两处的写文件行为一致。
 

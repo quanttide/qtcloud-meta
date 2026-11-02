@@ -8,15 +8,17 @@ stage: clarifying
 
 ## 已实现的接口
 
-包名 `qtcloud-meta-cli`，当前版本 0.1.0-alpha，edition 2024，第三方依赖：`clap`（命令行）、`lau-category-theory`（范式底座）、`serde`／`serde_json`／`serde_yml`（序列化）、`regex`（属性校准的 pattern）。命令名 `qtcloud-meta`，入口 `src/main.rs`，当前命令树：
+包名 `qtcloud-meta-cli`，当前版本 0.1.0-alpha.3，edition 2024，第三方依赖：`clap`（命令行）、`lau-category-theory`（范式底座）、`serde`／`serde_json`／`serde_yml`（序列化）、`regex`（属性校准的 pattern）。命令名 `qtcloud-meta`，入口 `src/main.rs`，当前命令树：
 
 - `paradigm within <范式>`：装载本体、跑数学校验，出范式内报告；
 - `paradigm between <源> <目标>`：查映射表走五步，缺规则时停在 change_request；
 - `property calibrate <YAML文件...>`：字段用法对标准属性表逐条核，标准外字段进待收录清单。
 
+三条命令都支持 `--format md|json` 与 `--out <路径>`；`--strict`（任一失败退出码 1）在 `within` 与 `calibrate`，`between` 没有——缺规则走指路，不算失败。
+
 ## 命令设计
 
-命令面已定并在发版：`paradigm within` / `paradigm between` / `property calibrate`，见上节命令树。设计依据一句话：谁在什么场合敲这条命令——改表的人改完当场验、跨域对接的人跑翻译、写 skill 的 agent 每次写完核字段。此前两版被否的设计（七个命令、单个 `change submit`）与理由存档在报告仓复盘 `data/report/retrospective/cli-naming.md`。
+命令面已定并在发版：`paradigm within` / `paradigm between` / `property calibrate`，见上节命令树。设计依据一句话：谁在什么场合敲这条命令——主用户是研发团队的 leader，要守大型复杂系统的一致性与可认知；落到场合是三种：改完表当场验、跨域跑翻译、AI 写完资料核字段。此前两版被否的设计（七个命令、单个 `change submit`）与理由存档在报告仓复盘 `data/report/retrospective/cli-naming.md`。
 
 ## 设计取向
 
