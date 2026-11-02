@@ -8,7 +8,7 @@ qtcloud-meta CLI 的文档组，按雪花写作法从[《三层极简架构方�
 
 ## 结构
 
-- [index.md](index.md)：总览——定位一句、平台坐标、工程现状、导航分流。
+- [index.md](index.md)：总览——定义一句、两面坐标与边界、从哪读起。
 - [intro/index.md](intro/index.md)：说服页——为什么值得用：因果链、概念体系、实跑证据、三类用户。
 - [user-guide/](user-guide/index.md)：用法——构建、三条命令实测、开关与退出码；分本体、范式（内 / 间）、属性几篇。
 - [dev-guide/](dev-guide/index.md)：工程——结构、日常检查、发布流程、文档分工与同步。
@@ -16,7 +16,7 @@ qtcloud-meta CLI 的文档组，按雪花写作法从[《三层极简架构方�
 
 ## 阅读顺序
 
-- 第一次接触：先看 [index](index.md) 的坐标与现状；还没被说服，读 [intro](intro/index.md)。
+- 第一次接触：先看 [index](index.md) 的定义与分流；还没被说服，读 [intro](intro/index.md)。
 - 要上手用：[user-guide](user-guide/index.md) → 对应分篇。
 - 要改代码或改文档：[dev-guide](dev-guide/index.md)；查命令面：[api-references](api-references/index.md)。
 
@@ -30,14 +30,13 @@ qtcloud-meta CLI 的文档组，按雪花写作法从[《三层极简架构方�
 
 总览两页同属 index 层，分的是两种读者、两个任务：**index 管地图，intro 管说服；定义在 index 是一句话，在 intro 是一篇。**
 
-**[index.md](index.md) 是门牌加目录**，只留四样：
+**[index.md](index.md) 是门牌加目录**，只留三样：
 
 1. 定义句——系统的元认知工具，一句话压住；
-2. 平台坐标——照两面（范式照结构、属性照字段）加一条边界（本体写入是方案定义、未实现）；
-3. 工程现状——包、版本、命令面；
-4. 文档导航——分流到 intro、用户指南、开发指南、API 参考。
+2. 两面坐标——范式照结构、属性照字段，加一句边界（本体写入只有方案、命令未做）；
+3. 从哪读起——分流到 intro、用户指南、开发指南、API 参考与三层方案。
 
-不写「为什么」，不展开子页细节，不带实跑例子。
+不写「为什么」，不展开子页细节，不带实跑例子；包名、版本号、实现进度与写作方法（雪花分解）不进本页，归 dev-guide 与 api-references。
 
 **[intro/index.md](intro/index.md) 是说服页**，展开四样：
 
