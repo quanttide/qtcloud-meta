@@ -8,7 +8,7 @@ stage: clarifying
 
 ## 已实现的接口
 
-包名 `qtcloud-meta-cli`，当前版本 0.1.0-alpha.3，edition 2024，第三方依赖：`clap`（命令行）、`lau-category-theory`（范式底座）、`serde`／`serde_json`／`serde_yml`（序列化）、`regex`（属性校准的 pattern）。命令名 `qtcloud-meta`，入口 `src/main.rs`，当前命令树：
+包名 `qtcloud-meta-cli`，当前版本 0.1.0-alpha.4，edition 2024，第三方依赖：`clap`（命令行）、`lau-category-theory`（范式底座）、`serde`／`serde_json`／`serde_yml`（序列化）、`regex`（属性校准的 pattern）。命令名 `qtcloud-meta`，入口 `src/main.rs`，当前命令树：
 
 - `paradigm within <范式>`：装载本体、跑数学校验，出范式内报告；
 - `paradigm between <源> <目标>`：查映射表走五步，缺规则时停在 change_request；
