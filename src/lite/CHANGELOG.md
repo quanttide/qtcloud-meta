@@ -2,7 +2,7 @@
 
 本子包（`src/lite`）的版本变更；仓库级大变更才进根 CHANGELOG。发布打 tag `lite/vX.Y.Z`。
 
-## [Unreleased]
+## [0.1.0-alpha.1] - 2026-11-02
 
 ### 新增
 
