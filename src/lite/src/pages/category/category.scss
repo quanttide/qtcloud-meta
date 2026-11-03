@@ -1,0 +1,133 @@
+.cat {
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+
+  &__intro {
+    font-size: 26px;
+    color: #8c8c8c;
+    line-height: 1.6;
+  }
+
+  &__grid {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  &__grid-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 8px 8px 20px;
+  }
+
+  &__grid-title {
+    font-size: 32px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__grid-dims {
+    font-size: 24px;
+    color: #b0b0b0;
+  }
+
+  &__row {
+    display: flex;
+    align-items: stretch;
+
+    &--header .cat__cell {
+      background: #f2f4f7;
+      border-radius: 8px;
+    }
+  }
+
+  &__corner {
+    width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+  }
+
+  &__dim {
+    font-size: 22px;
+    color: #b0b0b0;
+    text-align: center;
+  }
+
+  &__row-label {
+    font-size: 26px;
+    color: #595959;
+    font-weight: 500;
+  }
+
+  &__cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 20px 4px;
+    margin: 4px;
+    background: #fafbfc;
+    border-radius: 8px;
+  }
+
+  &__col-label {
+    font-size: 26px;
+    color: #404040;
+    font-weight: 500;
+  }
+
+  &__cell-name {
+    font-size: 27px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__cell-label {
+    font-size: 23px;
+    color: #8c8c8c;
+  }
+
+  &__ungridded {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .cat__grid-title {
+      padding: 8px 8px 4px;
+    }
+  }
+
+  &__ungridded-card {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 20px;
+    background: #fafbfc;
+    border-radius: 8px;
+  }
+
+  &__ungridded-name {
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__ungridded-role {
+    flex: 1;
+    font-size: 24px;
+    color: #8c8c8c;
+    line-height: 1.6;
+  }
+}

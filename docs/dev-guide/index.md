@@ -6,7 +6,7 @@
 
 qtcloud-meta（量潮元云）位于 `domains/quanttide-code/apps/qtcloud-meta`，是 quanttide-code 的子模块：独立提交、独立推送，父仓库只更新指针。
 
-仓库两块：`docs/` 是三层方案的事实源；`src/cli` 是已实现的命令行（三条命令，crates.io 发到 0.1.0-alpha.3），其文档在 [CLI 文档](../../src/cli/docs/index.md)。此前的 `src/studio` 已迁出至归档仓 platform/studio。
+仓库三块：`docs/` 是三层方案的事实源；`src/cli` 是已实现的命令行（三条命令，crates.io 发到 0.1.0-alpha.4），其文档在 [CLI 文档](../../src/cli/docs/index.md)；`src/lite` 是微信小程序（首页 + 标准范畴只读展示）。此前的旧 `src/studio` 已迁出至归档仓 platform/studio，新工作台设计见 [studio 交互设计](studio.md)。
 
 目录结构：
 
@@ -15,7 +15,8 @@ qtcloud-meta（量潮元云）位于 `domains/quanttide-code/apps/qtcloud-meta`�
 - `docs/user-guide/index.md`：用户指南，完整的使用过程与示例；
 - `docs/dev-guide/index.md`：本文件，方案细节与维护任务；
 - `src/cli/`：已实现的命令行工程与它的文档（`src/cli/docs/`），见 [CLI 文档](../../src/cli/docs/index.md)；
-- `docs/dev-guide/studio.md`：元数据工作台（studio）的交互设计——侧边导航壳、归属原则与三个分区，尚未开工。
+- `docs/dev-guide/studio.md`：元数据工作台（studio）的交互设计——侧边导航壳、归属原则与三个分区（含范畴维护页），尚未开工；
+- `src/lite/`：微信小程序（Taro 4 + React + TS）——首页与标准范畴展示页，照子包惯例带自己的 README 与 CHANGELOG，发布 tag `lite/vX.Y.Z`；构建产物 `dist/` 不入库。
 
 文档用雪花写作法逐层分解：`index.md` 建立对平台的全局想象，过程展开到用户指南，结构与实现细节展开到本文件。新增内容先判断归属，不把细节写回 `index.md`。接手后的阅读顺序：`docs/index.md` → `docs/user-guide/index.md` → 本文件；要上手命令另看 [CLI 用户指南](../../src/cli/docs/user-guide/index.md)。
 

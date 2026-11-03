@@ -4,3 +4,5 @@
 
 - 方案与流程：[三层极简架构方案](docs/index.md)
 - 命令与用法：[CLI 文档](src/cli/docs/index.md)
+- 微信小程序：[lite](src/lite/)（只读展示：首页 + 标准范畴）
+- 工作台设计：[studio 交互设计](docs/dev-guide/studio.md)（范畴维护页、侧边导航壳）
