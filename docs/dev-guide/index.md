@@ -14,7 +14,8 @@ qtcloud-meta（量潮元云）位于 `domains/quanttide-code/apps/qtcloud-meta`�
 - `docs/index.md`：三层极简架构方案总览，只保留全局结构与文档导航；
 - `docs/user-guide/index.md`：用户指南，完整的使用过程与示例；
 - `docs/dev-guide/index.md`：本文件，方案细节与维护任务；
-- `src/cli/`：已实现的命令行工程与它的文档（`src/cli/docs/`），见 [CLI 文档](../../src/cli/docs/index.md)。
+- `src/cli/`：已实现的命令行工程与它的文档（`src/cli/docs/`），见 [CLI 文档](../../src/cli/docs/index.md)；
+- `docs/dev-guide/studio.md`：元数据工作台（studio）的交互设计——侧边导航壳、归属原则与三个分区，尚未开工。
 
 文档用雪花写作法逐层分解：`index.md` 建立对平台的全局想象，过程展开到用户指南，结构与实现细节展开到本文件。新增内容先判断归属，不把细节写回 `index.md`。接手后的阅读顺序：`docs/index.md` → `docs/user-guide/index.md` → 本文件；要上手命令另看 [CLI 用户指南](../../src/cli/docs/user-guide/index.md)。
 
