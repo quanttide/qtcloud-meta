@@ -1,0 +1,7 @@
+name: qtcloud_meta_studio
+description: 量潮元数据工作台（设计定稿，实现未开工）
+publish_to: none
+version: 0.1.0-alpha.1
+
+environment:
+  sdk: ^3.0.0
