@@ -11,7 +11,7 @@
 ```text
 ┌─────────┬────────────────┬────────────────────────────────┐
 │ ◇ 范式   │ 本体表          │ 工具带          [跑分析] [导出] │
-│ ◇ 走向   │ ▸ qtcloud-code  │────────────────────────────────│
+│ ◇ 映射   │ ▸ qtcloud-code  │────────────────────────────────│
 │ ◇ 标准   │ ▸ qtcloud-work  │                                │
 │         │ ▸ qtcloud-meta  │  报告：装载 → 分析 → 结论        │
 │         │   （来源：文件）  │  （或校准：失败 + 待收录）        │
@@ -31,13 +31,13 @@ Flutter Material 3 `NavigationRail`，`labelType: all`（图标 + 中文短标�
 | 分区 | 图标 | 内容 | 状态 |
 |:--|:--|:--|:--|
 | 范式 | `Icons.account_tree_outlined` | 本体表清单 + 范式内报告 | 现在 |
-| 走向 | `Icons.alt_route_outlined` | 映射表清单 + 范式间报告 | 现在 |
+| 映射 | `Icons.compare_arrows_outlined` | 映射表清单 + 范式间报告 | 现在 |
 | 标准 | `Icons.rule_outlined` | 属性标准清单 + 校准报告 | 现在 |
 | 设置 | `Icons.settings_outlined` | 表目录、默认 format、strict 默认值 | 现在 |
 
 预留分区照加 `NavigationRailDestination`，占位页统一「规划中」（`PlaceholderPage` 同款）。主题 `ColorScheme.fromSeed(seedColor: 0xFF1677FF)`、`useMaterial3: true`——冷色区别于媒体云的微信绿，换色只动 seed 一行。
 
-分区为什么是这三个：与 CLI 的三条命令一一对应（`within` → 范式、`between` → 走向、`calibrate` → 标准），界面分区与命令面不另造第四套词。
+分区为什么是这三个：**导航栏摆名词，动作摆工具带**。范式、映射、标准都是概念体系里已定的名词，媒体云的 rail 同理（文章、图文、视频也是名词）；跑分析、跑翻译、跑校准是动词，住在工具带，不占导航位。其余概念不单开分区：公理长在范式的表里、属性长在标准里；范畴留作预留占位，到有表那天再加 `NavigationRailDestination`。
 
 ## 归属原则：动作作用于谁，就住哪一栏
 
@@ -54,7 +54,7 @@ Flutter Material 3 `NavigationRail`，`labelType: all`（图标 + 中文短标�
 工具带是**工具带，不是标题栏**，守住三条（与媒体云同款）：
 
 1. **安静**：背景 `surfaceContainerLow`（比详情区浅一档），按钮次要样式起步，不抢报告的视觉焦点。
-2. **主行动唯一**：每个分区只有一个主按钮——范式页「跑分析」、走向页「跑翻译」、标准页「跑校准」；format、strict、导出全是次要样式。
+2. **主行动唯一**：每个分区只有一个主按钮——范式页「跑分析」、映射页「跑翻译」、标准页「跑校准」；format、strict、导出全是次要样式。
 3. **靠右**：报告是流程的产出，工具带按钮放右端，与产出同侧。
 
 ## 三个分区的清单与详情
@@ -64,7 +64,7 @@ Flutter Material 3 `NavigationRail`，`labelType: all`（图标 + 中文短标�
 - **清单**：三份本体（`qtcloud-meta-cli-category` 16 概念、`qtcloud-code-cli` 17、`qtcloud-work-cli` 13），每项标注来源（文件 / 内置快照）——来源直接取报告装载步，不另问。
 - **详情**：跑出的报告四段——装载（对象与态射）、分析（四组校验）、关系清单、结论；`--strict` 结果在工具带以状态点示意，失败不弹窗。
 
-### 走向
+### 映射
 
 - **清单**：三张映射表（code → work 6 条、work → meta 3 条、meta → code 3 条）；反向三对灰显、标「缺表」——可点，点了照样跑，报告停在第 4 步。
 - **详情**：五步轨迹；停机位画成指路卡——change_request 编号与该补的文件路径，卡上「复制路径」，补完回页面点刷新即接上。
